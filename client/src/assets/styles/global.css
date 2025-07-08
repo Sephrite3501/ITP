@@ -1,0 +1,74 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f8f9fb;
+  color: #222;
+  margin: 0;
+  padding: 0;
+}
+
+.form-container {
+  max-width: 460px;
+  margin: 4rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+}
+
+.form-title {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #0077cc;
+}
+
+.form-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-input {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  transition: border 0.3s;
+}
+
+.form-input:focus {
+  border-color: #0077cc;
+  outline: none;
+}
+
+.form-button {
+  padding: 0.75rem;
+  background-color: #0077cc;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.form-button:hover {
+  background-color: #005fa3;
+}
+
+.password-strength {
+  font-size: 0.9rem;
+  color: #555;
+  text-align: right;
+}
+
+.form-success {
+  color: green;
+  text-align: center;
+}
+
+.form-error {
+  color: red;
+  text-align: center;
+}
