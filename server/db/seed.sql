@@ -16,6 +16,22 @@ INSERT INTO users (
   NOW()
 );
 
+INSERT INTO users (
+  name, email, password_hash, contact, address, user_role, role, account_status, email_verified, created_at, updated_at
+) VALUES (
+  'shawn',
+  'sscoconut123@gmail.com',
+  '$2b$10$rBVNo09lwIsVtFDnIQL.c.RHIwct2gf9P4X6LxPlAGNtmySOBdF9K', -- hash of P@ssw0rd
+  '+65',
+  '',
+  'admin',
+  'Chair',
+  'active',
+  false,
+  NOW(),
+  NOW()
+);
+
 -- Insert deleted normal user
 INSERT INTO users (
   name, email, password_hash, address, user_role, account_status, email_verified, created_at, updated_at

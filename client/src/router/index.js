@@ -52,6 +52,19 @@ const routes = [
     component: () => import('../views/public/PasswordResetSuccess.vue'),
     meta: { guestOnly: true }
   },
+  {
+    path: '/committees',
+    name: 'committees',
+    component: () => import('../views/public/Committee.vue'),
+    meta: { guestOnly: true }
+  },
+
+  {
+      path: '/committees/snapshots',
+      name: 'snapshot',
+      component: () => import('../views/public/CommitteeHistory.vue')
+    },
+
     {
     path: '/home',
     component: () => import('../views/public/HomeView.vue'),
@@ -84,8 +97,21 @@ const routes = [
     path: '/admin/content-management',
     component: () => import('@/views/admin/ContentManagement.vue'),
     meta: { requiresAuth: true }
-  }
+  },
 
+  // To change once got admin
+  // {
+  //   path: '/admin/CommitteePanel',
+  //   component: () => import('@/views/admin/AdminCommitteePanel.vue'),
+  //   meta: {  requiresAuth: true }
+  // },
+
+
+  {
+     path: '/CommitteePanel',
+     component: () => import('@/views/admin/AdminCommitteePanel.vue'),
+     meta: {  guestOnly: true }
+   },
 
 ]
 

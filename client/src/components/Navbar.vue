@@ -23,6 +23,8 @@
 
         <template v-else>
           <li><router-link to="/home">Home</router-link></li>
+          <li><router-link to="/committees">Committees</router-link></li>
+          <li><router-link to="/committees/snapshots">Committees History</router-link></li>
           <li><router-link to="/membership">Membership</router-link></li>
           <li><router-link to="/login">Login</router-link></li>
           <li><router-link to="/signup">Sign Up</router-link></li>

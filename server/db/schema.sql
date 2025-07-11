@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   address TEXT,
   member_type VARCHAR(50) DEFAULT 'basic',
   user_role VARCHAR(20) DEFAULT 'user', -- renamed from "role"
+  role VARCHAR(20),
   account_status VARCHAR(20) DEFAULT 'pending',
   email_verified BOOLEAN DEFAULT FALSE,
   profile_image_path TEXT,  -- for storing profile pic path
@@ -15,6 +16,11 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE committee_snapshots (
+  id         SERIAL PRIMARY KEY,
+  taken_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  data       JSONB                NOT NULL
+);
 
 CREATE TABLE payment_submissions (
   id SERIAL PRIMARY KEY,
