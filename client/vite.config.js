@@ -31,13 +31,13 @@ export default defineConfig({
     proxy: {
       // your existing /api proxy
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://server:3001',
         changeOrigin: true,
         secure: false,
       },
       // new /assets proxy
       '/assets': {
-        target: 'http://localhost:3001',
+        target: 'http://server:3001',
         changeOrigin: true,
         secure: false,
       },

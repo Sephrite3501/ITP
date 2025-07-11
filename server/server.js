@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
-
+import contentRoutes from './routes/content.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -26,12 +26,14 @@ app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // ✅ enable cookie parsing
+app.use('/assets', express.static(path.join(__dirname, 'assets')))
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/content', contentRoutes);
 
 // Root placeholder
 app.get('/', (req, res) => {

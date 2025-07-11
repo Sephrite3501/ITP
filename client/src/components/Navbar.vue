@@ -17,11 +17,12 @@
           <li><router-link to="/userprofile">Profile</router-link></li>
           <li><router-link to="/admin/users">User Management</router-link></li>
           <li><router-link to="/admin/verify-user">User Verification</router-link></li>
+          <li><router-link to="/admin/content-management">Content Management</router-link></li>
           <li><button @click="logout" class="logout-btn">Logout</button></li>
         </template>
 
         <template v-else>
-          <li><router-link to="/">Home</router-link></li>
+          <li><router-link to="/home">Home</router-link></li>
           <li><router-link to="/membership">Membership</router-link></li>
           <li><router-link to="/login">Login</router-link></li>
           <li><router-link to="/signup">Sign Up</router-link></li>

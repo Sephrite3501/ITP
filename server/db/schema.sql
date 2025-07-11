@@ -98,4 +98,15 @@ CREATE TABLE IF NOT EXISTS login_otp (
   expires_at TIMESTAMP NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
+-- Home page content 
+CREATE TABLE IF NOT EXISTS site_content (
+  id         SERIAL PRIMARY KEY,
+  carousel   JSONB   NOT NULL,                
+  intro      JSONB   NOT NULL,                
+  vision     TEXT    NOT NULL,                
+  mission    TEXT    NOT NULL,                
+  community  JSONB   NOT NULL,                
+  updated_at TIMESTAMPTZ DEFAULT NOW()        
+);
+
 

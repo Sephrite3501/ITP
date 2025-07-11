@@ -23,6 +23,7 @@ services:
       - "3001:3001"
     volumes:
       - ./server/uploads:/app/uploads
+      - ./client/src/assets:/app/assets
     env_file:
       - ./server/.env
     depends_on:

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import ContentManagement from '../views/admin/ContentManagement.vue'
 
 const routes = [
   // 🔓 Public / Guest-only Routes
@@ -51,7 +52,11 @@ const routes = [
     component: () => import('../views/public/PasswordResetSuccess.vue'),
     meta: { guestOnly: true }
   },
-
+    {
+    path: '/home',
+    component: () => import('../views/public/HomeView.vue'),
+    meta: { guestOnly: true }
+    },
   // 🔐 Authenticated User Routes
   {
     path: '/userprofile',
@@ -75,6 +80,11 @@ const routes = [
     component: () => import('@/views/admin/AdminVerifyUser.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/admin/content-management',
+    component: () => import('@/views/admin/ContentManagement.vue'),
+    meta: { requiresAuth: true }
+  }
 
 
 ]
