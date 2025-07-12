@@ -26,12 +26,12 @@
 
       <!-- Chair Grid -->
       <div>
-        <h2 class="text-2xl font-extrabold text-gray-700 mb-6 text-center">Chairs</h2>
+        <h2 class="text-2xl font-extrabold text-gray-700 mb-6 text-center">Committee Members</h2>
         <div
           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"
         >
           <ChairCard
-            v-for="m in chair"
+            v-for="m in member"
             :key="m.id"
             :member="m"
           />
@@ -61,7 +61,7 @@ axios.interceptors.request.use(cfg => {
 })
 
 // ─── Reactive state & data fetch ────────────────────────────────────
-const raw       = ref({ leadership: [], chair: [] })
+const raw       = ref({ leadership: [], member: [] })
 const isLoading = ref(true)
 const error     = ref(null)
 
@@ -90,8 +90,8 @@ async function fetchCommittees() {
         }))
       : []
 
-    raw.value.chair = Array.isArray(data.chair)
-      ? data.chair.map(m => sanitizeMember(m))
+    raw.value.member = Array.isArray(data.member)
+      ? data.member.map(m => sanitizeMember(m))
       : []
 
   } catch (err) {
@@ -105,7 +105,7 @@ async function fetchCommittees() {
 onMounted(fetchCommittees)
 
 const leadership = computed(() => raw.value.leadership)
-const chair      = computed(() => raw.value.chair)
+const member      = computed(() => raw.value.member)
 </script>
 
 <style scoped>

@@ -95,10 +95,14 @@ function debounce(fn, wait = 300) {
 
 // 1) Roles matching your server logic
 const roles = [
-  'General Co-Chair',
-  'General Chair',
-  'Technical Program Chair',
-  'Chair'
+  'President',
+  'Vice President',
+  'Secretary',
+  'Assistant Secretary',
+  'Treasurer',
+  'Assistant Treasurer',
+  'Club Manager',
+  'Committee Member'
 ]
 
 // 2) Reactive state
@@ -112,8 +116,8 @@ async function fetchAssignments() {
   try {
     const { data } = await axios.get('/api/committees')
     roles.forEach(r => {
-      if (r === 'Chair') {
-        assignments[r] = data.chair || []
+      if (r === 'Committee Member') {
+        assignments[r] = data.member || []
       } else {
         assignments[r] = (data.leadership || [])
           .filter(slot => slot.role === r)

@@ -23,7 +23,7 @@
     <div v-else-if="error" class="text-red-500">{{ error }}</div>
 
     <!-- Render the selected snapshot -->
-    <div v-else-if="board.leadership.length || board.chair.length" class="space-y-12">
+    <div v-else-if="board.leadership.length || board.member.length" class="space-y-12">
       <div>
         <h2 class="text-2xl font-semibold mb-4">Leadership</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -36,10 +36,10 @@
         </div>
       </div>
       <div>
-        <h2 class="text-2xl font-semibold mb-4">Chairs</h2>
+        <h2 class="text-2xl font-semibold mb-4">Committee Members</h2>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           <ChairCard
-            v-for="m in board.chair"
+            v-for="m in board.member"
             :key="m.id"
             :member="m"
           />
@@ -57,7 +57,7 @@ import ChairCard      from '../../components/ChairCard.vue'
 
 
 const snapshots   = ref([])
-const board       = reactive({ leadership: [], chair: [] })
+const board       = reactive({ leadership: [], member: [] })
 const isLoading   = ref(false)
 const error       = ref(null)
 
@@ -80,7 +80,7 @@ async function loadSnapshot(id) {
   try {
     const { data } = await axios.get(`/api/committees/snapshots/${id}`)
     board.leadership = data.leadership
-    board.chair      = data.chair
+    board.member      = data.member
   } catch {
     error.value = 'Failed to load snapshot'
   } finally {

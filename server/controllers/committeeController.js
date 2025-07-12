@@ -13,10 +13,14 @@ export const snapshotLimiter = rateLimit({
 })
 
 export const ALLOWED_ROLES = [
-  'General Co-Chair',
-  'General Chair',
-  'Technical Program Chair',
-  'Chair'
+  'President',
+  'Vice President',
+  'Secretary',
+  'Assistant Secretary',
+  'Treasurer',
+  'Assistant Treasurer',
+  'Club Manager',
+  'Committee Member'
 ]
 
 function sanitizeMember(member = {}) {
@@ -45,17 +49,24 @@ export const getCommittees = async (req, res) => {
       role: sanitizeHtml(u.role, { allowedTags: [], allowedAttributes: {} })
     }))
 
-    const leadershipOrder = ['General Co-Chair','General Chair','Technical Program Chair']
+    const leadershipOrder = ['President',
+  'Vice President',
+  'Secretary',
+  'Assistant Secretary',
+  'Treasurer',
+  'Assistant Treasurer',
+  'Club Manager'
+  ]
     const leadership = all
       .filter(u => leadershipOrder.includes(u.role))
       .sort((a,b) => leadershipOrder.indexOf(a.role) - leadershipOrder.indexOf(b.role))
       .map(u => ({ role: u.role, member: { id: u.id, name: u.name } }))
 
-    const chair = all
-      .filter(u => u.role === 'Chair')
+    const member = all
+      .filter(u => u.role === 'Committee Member')
       .map(u => ({ id: u.id, name: u.name }))
 
-    res.json({ leadership, chair })
+    res.json({ leadership, member })
     logSecurityEvent({ traceId, action:'get_committees', status:'success', ip, userAgent:ua, message:'Listed committees' })
 
   } catch (err) {
@@ -104,13 +115,13 @@ export const getSnapshotById = async (req, res) => {
       return res.sendStatus(404)
     }
 
-    const { leadership = [], chair = [] } = rows[0].data
+    const { leadership = [], member = [] } = rows[0].data
     res.json({
       leadership: leadership.map(slot => ({
         role: slot.role,
         member: sanitizeMember(slot.member)
       })),
-      chair: chair.map(sanitizeMember)
+      member: member.map(sanitizeMember)
     })
     logSecurityEvent({ traceId, action:'get_snapshot', status:'success', ip, userAgent:ua, message:`Fetched snapshot ${id}` })
 
@@ -138,20 +149,26 @@ export async function snapshotCommittees() {
     `SELECT id,name,role FROM users WHERE role IS NOT NULL`
   )
   const all = rows
-  const order = ['General Co-Chair','General Chair','Technical Program Chair']
+  const order = ['President',
+  'Vice President',
+  'Secretary',
+  'Assistant Secretary',
+  'Treasurer',
+  'Assistant Treasurer',
+  'Club Manager']
 
   const leadership = all
     .filter(u => order.includes(u.role))
     .sort((a,b) => order.indexOf(a.role) - order.indexOf(b.role))
     .map(u => ({ role: u.role, member: { id: u.id, name: u.name }}))
 
-  const chair = all
-    .filter(u => u.role === 'Chair')
+  const member = all
+    .filter(u => u.role === 'Committee Member')
     .map(u => ({ id: u.id, name: u.name }))
 
   await pool.query(
     `INSERT INTO committee_snapshots (data) VALUES ($1)`,
-    [{ leadership, chair }]
+    [{ leadership, member }]
   )
 }
 

@@ -25,7 +25,7 @@ INSERT INTO users (
   '+65',
   '',
   'admin',
-  'Chair',
+  'Committee Member',
   'active',
   false,
   NOW(),
