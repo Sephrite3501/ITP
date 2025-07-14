@@ -235,4 +235,124 @@ export const approveSubmission = async (req, res) => {
 
     res.status(500).json({ error: `Failed to approve user (Ref: ${refId})` });
   }
+}
+
+export const listEventsWithCounts = async (_req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT 
+        e.id,
+        e.name,
+        e.slug,
+        e.location,
+        e.poc,
+        e.date,
+        e.description,
+        e.event_type,
+        COUNT(r.id) AS registration_count
+      FROM events e
+      LEFT JOIN event_registrations r ON e.id = r.event_id
+      GROUP BY e.id
+      ORDER BY e.date DESC
+    `)
+
+    res.json(rows)
+  } catch (err) {
+    console.error("Error fetching event list with counts:", err)
+    res.sendStatus(500)
+  }
 };
+
+export const deleteEvent = async (req, res) => {
+  const { id } = req.params
+  try {
+    await db.query('DELETE FROM events WHERE id = $1', [id])
+    res.sendStatus(204)
+  } catch (err) {
+    console.error('Failed to delete event:', err)
+    res.sendStatus(500)
+  }
+};
+
+export const getRegisteredUsers = async (req, res) => {
+  const { id } = req.params
+
+  try {
+    const { rows } = await db.query(`
+      SELECT u.id, u.name, u.email
+      FROM event_registrations er
+      JOIN users u ON er.user_id = u.id
+      WHERE er.event_id = $1
+    `, [id])
+
+    res.json(rows)
+  } catch (err) {
+    console.error("Error fetching registered users:", err)
+    res.sendStatus(500)
+  }
+}
+
+export const createEvent = async (req, res) => {
+  const { name, date, location, description, event_type } = req.body
+
+  if (!name || !date) return res.status(400).json({ error: 'Missing required fields' })
+
+  const slug = name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '')
+
+  try {
+    await db.query(
+      `INSERT INTO events (name, slug, date, location, description, event_type, poc)
+       VALUES ($1, $2, $3, $4, $5, $6, true)`,
+      [name, slug, date, location, description, event_type]
+    )
+    res.status(201).json({ message: 'Event created', slug })
+  } catch (err) {
+    console.error('Failed to create event:', err)
+    res.sendStatus(500)
+  }
+}
+
+
+export const updateEvent = async (req, res) => {
+  const { id } = req.params
+  const { name, date, location, event_type, description, poc } = req.body
+
+  const slug = name
+  .toLowerCase()
+  .trim()
+  .replace(/\s+/g, '-')
+  .replace(/[^\w-]/g, '')
+
+  try {
+    const result = await db.query(
+      `UPDATE events
+       SET name = $1,
+           date = $2,
+           location = $3,
+           event_type = $4,
+           description = $5,
+           poc = $6,
+           slug = $7,
+           updated_at = NOW()
+       WHERE id = $8
+       RETURNING *`,
+      [name, date, location, event_type, description, poc, slug, id]
+    )
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Event not found" })
+    }
+
+    res.json({ message: "Event updated", event: result.rows[0] })
+  } catch (err) {
+    console.error("Failed to update event:", err)
+    res.status(500).json({ message: "Internal server error" })
+  }
+}
+
+
+

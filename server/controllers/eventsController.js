@@ -89,3 +89,5 @@ export const registerForEventBySlug = async (req, res) => {
     res.sendStatus(500);
   }
 };
+
+

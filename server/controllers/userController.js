@@ -276,4 +276,3 @@ export const unregisterUserFromEvent = async (req, res) => {
     return res.status(500).json({ error: 'Failed to unregister' })
   }
 }
-

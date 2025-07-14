@@ -1,7 +1,7 @@
 <template>
   <nav class="navbar">
     <div class="navbar-inner">
-      <h1 class="logo">IRC</h1>
+      <img src="@/assets/irc-logo.png" alt="IRC Logo" class="logo" />
 
       <ul class="nav-links">
         <template v-if="auth.user && !auth.isAdmin">
@@ -15,10 +15,16 @@
         </template>
 
         <template v-else-if="auth.isAdmin">
-          <li><router-link to="/userprofile">Profile</router-link></li>
-          <li><router-link to="/admin/users">User Management</router-link></li>
-          <li><router-link to="/admin/verify-user">User Verification</router-link></li>
-          <li><router-link to="/admin/content-management">Content Management</router-link></li>
+          <!--<li><router-link to="/userprofile">Profile</router-link></li>-->
+            <li class="dropdown">
+            <span class="dropdown-toggle">Management</span>
+            <ul class="dropdown-menu">
+              <li><router-link to="/admin/users">User Management</router-link></li>
+              <li><router-link to="/admin/verify-user">User Verification</router-link></li>
+              <li><router-link to="/admin/content-management">Content Management</router-link></li>
+              <li><router-link to="/admin/event-management">Event Management</router-link></li>
+            </ul>
+            </li>
           <li><button @click="logout" class="logout-btn">Logout</button></li>
         </template>
 
@@ -105,7 +111,9 @@ const logout = async () => {
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #16a34a;
+  color: #91afc6;
+  width: 5%;
+  height: auto;
 }
 
 .nav-links {
@@ -124,7 +132,7 @@ const logout = async () => {
 }
 
 .nav-links a.router-link-active {
-  color: #16a34a;
+  color: #91afc6;
 }
 
 .logout-btn {
@@ -139,4 +147,68 @@ const logout = async () => {
   color: #4b5563;
   font-size: 0.95rem;
 }
+
+
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+li.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+  padding: 0.5rem 0;
+  display: inline-block;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #ffffff;
+  min-width: 220px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  z-index: 999;
+  pointer-events: auto; /* allow hovering */
+}
+
+/* Show dropdown on hover */
+.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+/* Style dropdown items like other nav links */
+.dropdown-menu li {
+  padding-bottom: 0;
+}
+
+.dropdown-menu li a {
+  display: block;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: #374151;
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Hover and active states */
+.dropdown-menu li a:hover {
+  background-color: #f3f4f6;
+  color: #91afc6;
+}
+
+.dropdown-menu li a.router-link-active {
+  color: #91afc6;
+}
+
 </style>
