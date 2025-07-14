@@ -16,8 +16,8 @@ export function useSessionWatcher() {
   let idleTimeout = null
   let refreshInterval = null
 
-  const INACTIVITY_LIMIT = 1 * 60 * 1000 // 1 min for testing
-  const REFRESH_INTERVAL = 10 * 1000     // 10s for testing
+  const INACTIVITY_LIMIT = 30 * 60 * 1000 // 30 min for inactivity
+  const REFRESH_INTERVAL = 30 * 1000     // 30 seconds for refresh
   const activityEvents = ['mousemove', 'keydown', 'scroll', 'click']
 
   const updateActivity = () => {
