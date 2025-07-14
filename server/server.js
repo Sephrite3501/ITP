@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 
+import protectedRoutes from './routes/protected.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
 import contentRoutes from './routes/content.js';
@@ -33,7 +34,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // ✅ enable cookie parsing
 app.use('/assets', express.static(path.join(__dirname, 'assets')))
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/protected', protectedRoutes);
 
 // Routes
 app.use('/api/auth', authRoutes);

@@ -13,8 +13,8 @@
         </div>
 
         <div class="form-group">
-          <label for="proofAddress">Proof of Address</label>
-          <input id="proofAddress" type="file" @change="e => handleFileChange(e, 'address')" required />
+          <label for="proofPayment">Proof of Payment</label>
+          <input id="proofPayment" type="file" @change="e => handleFileChange(e, 'payment')" required />
         </div>
 
         <button type="submit" :disabled="uploading">
@@ -34,7 +34,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const idFile = ref(null)
-const addressFile = ref(null)
+const paymentFile = ref(null)
 const uploading = ref(false)
 const uploadStatus = ref('')
 const router = useRouter()
@@ -42,7 +42,7 @@ const router = useRouter()
 function handleFileChange(event, type) {
   const file = event.target.files[0]
   if (type === 'id') idFile.value = file
-  if (type === 'address') addressFile.value = file
+  if (type === 'payment') paymentFile.value = file
 }
 
 async function uploadDocuments() {
@@ -51,7 +51,7 @@ async function uploadDocuments() {
 
   const formData = new FormData()
   formData.append('paymentProof', idFile.value)
-  formData.append('identityProof', addressFile.value)
+  formData.append('identityProof', paymentFile.value)
 
 
   try {
