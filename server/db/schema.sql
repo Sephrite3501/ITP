@@ -115,4 +115,24 @@ CREATE TABLE IF NOT EXISTS site_content (
   updated_at TIMESTAMPTZ DEFAULT NOW()        
 );
 
+CREATE TABLE IF NOT EXISTS events (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  date DATE NOT NULL,
+  location VARCHAR(255),
+  description TEXT,
+  event_type VARCHAR(100),
+  poc BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS event_registrations (
+  id SERIAL PRIMARY KEY,
+  event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL,
+  registered_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (event_id, user_id)
+);
+
 

@@ -326,3 +326,78 @@ export const approveSubmission = async (req, res) => {
   }
 }
 
+export const getUserFromToken = async (token) => {
+  if (!token) return null;
+
+  try {
+    const result = await pool.query(`
+      SELECT u.id, u.name, u.email, u.user_role
+      FROM session_tokens st
+      JOIN users u ON st.user_id = u.id
+      WHERE st.token = $1 AND st.expires_at > NOW()
+    `, [token]);
+
+    return result.rows[0] || null;
+  } catch (err) {
+    console.error('Error in getUserFromToken:', err);
+    return null;
+  }
+};
+
+
+export const getUserRegisteredEvents = async (req, res) => {
+  const token = req.cookies?.auth_token
+
+  const user = await getUserFromToken(token)
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT 
+        e.id,
+        e.name AS title,
+        e.date,
+        e.location,
+        er.registered_at
+      FROM event_registrations er
+      JOIN events e ON er.event_id = e.id
+      WHERE er.user_id = $1
+      ORDER BY e.date DESC`,
+      [user.id]
+    )
+
+    return res.status(200).json(result.rows)
+  } catch (err) {
+    console.error('Error fetching registered events:', err)
+    return res.status(500).json({ error: 'Failed to fetch registered events' })
+  }
+}
+
+export const unregisterUserFromEvent = async (req, res) => {
+  const token = req.cookies?.auth_token
+  const eventId = req.params.eventId
+
+  const user = await getUserFromToken(token)
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM event_registrations WHERE event_id = $1 AND user_id = $2`,
+      [eventId, user.id]
+    )
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Registration not found' })
+    }
+
+    return res.status(200).json({ message: 'Unregistered successfully' })
+  } catch (err) {
+    console.error('Error unregistering from event:', err)
+    return res.status(500).json({ error: 'Failed to unregister' })
+  }
+}
+

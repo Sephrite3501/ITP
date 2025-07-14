@@ -1,97 +1,116 @@
 <template>
   <section class="profile-container">
-    <div class="profile-box">
-      <h1 class="profile-title">Your Profile</h1>
+    <div class="profile-layout">
+      <!-- LEFT: Profile Box -->
+      <div class="profile-box">
+        <h1 class="profile-title">Your Profile</h1>
 
-      <template v-if="!editing && !deleting">
-        <div class="profile-field">
-          <label>Name</label>
-          <p>{{ user.name }}</p>
-        </div>
-        <div class="profile-field">
-          <label>Email</label>
-          <p>{{ user.email }}</p>
-        </div>
-        <div class="profile-field">
-          <label>Contact Number</label>
-          <p>{{ user.contact }}</p>
-        </div>
-        <div class="profile-field">
-          <label>Address</label>
-          <p>{{ user.address }}</p>
-        </div>
-
-        <div class="form-actions">
-          <button @click="editing = true" class="edit-button">Edit Profile</button>
-        </div>
-        <div class="form-actions">
-          <button @click="deleting = true" class="btn-danger">Delete My Account</button>
-        </div>
-      </template>
-
-      <!-- Edit Profile Form -->
-      <form v-if="editing" @submit.prevent="saveChanges" class="profile-form">
-        <div class="form-row">
-          <div class="form-group">
+        <template v-if="!editing && !deleting">
+          <div class="profile-field">
+            <label>Name</label>
+            <p>{{ user.name }}</p>
+          </div>
+          <div class="profile-field">
             <label>Email</label>
-            <input type="email" :value="user.email" disabled />
+            <p>{{ user.email }}</p>
           </div>
-          <div class="form-group">
+          <div class="profile-field">
             <label>Contact Number</label>
-            <input v-model="form.contact" type="text" placeholder="e.g. +65 9123 4567" />
+            <p>{{ user.contact }}</p>
           </div>
-        </div>
+          <div class="profile-field">
+            <label>Address</label>
+            <p>{{ user.address }}</p>
+          </div>
 
-        <div class="form-group">
-          <label>Address</label>
-          <input v-model="form.address" type="text" placeholder="e.g. Blk 123 Street 1, #01-01" />
-        </div>
+          <div class="form-actions">
+            <button @click="editing = true" class="edit-button">Edit Profile</button>
+            <button @click="deleting = true" class="btn-danger">Delete My Account</button>
+          </div>
+        </template>
 
-        <div class="form-row">
+        <!-- Edit Profile Form -->
+        <form v-if="editing" @submit.prevent="saveChanges" class="profile-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" :value="user.email" disabled />
+            </div>
+            <div class="form-group">
+              <label>Contact Number</label>
+              <input v-model="form.contact" type="text" placeholder="e.g. +65 9123 4567" />
+            </div>
+          </div>
+
           <div class="form-group">
-            <label>Current Password <span class="required">*</span></label>
-            <input v-model="form.currentPassword" type="password" required />
+            <label>Address</label>
+            <input v-model="form.address" type="text" placeholder="e.g. Blk 123 Street 1, #01-01" />
           </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Current Password <span class="required">*</span></label>
+              <input v-model="form.currentPassword" type="password" required />
+            </div>
+            <div class="form-group">
+              <label>New Password <small>(optional)</small></label>
+              <input v-model="form.newPassword" type="password" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="save-button">Save Changes</button>
+            <button type="button" class="cancel-button" @click="editing = false">Cancel</button>
+          </div>
+        </form>
+
+        <!-- Delete Account Form -->
+        <form v-if="deleting" @submit.prevent="deleteAccount" class="profile-form">
+          <h2 class="text-xl font-semibold text-red-600">Delete Account</h2>
+          <p class="text-sm text-gray-600 mb-3">
+            This action is irreversible. You will not be able to log in again unless reactivated by an admin.
+          </p>
+
           <div class="form-group">
-            <label>New Password <small>(optional)</small></label>
-            <input v-model="form.newPassword" type="password" />
+            <label>Confirm Password <span class="required">*</span></label>
+            <input v-model="confirmPassword" type="password" required />
           </div>
-        </div>
 
-        <div class="form-actions">
-          <button type="submit" class="save-button">Save Changes</button>
-          <button type="button" class="cancel-button" @click="editing = false">Cancel</button>
-        </div>
-      </form>
+          <div class="form-actions">
+            <button type="submit" class="btn-danger">Delete My Account</button>
+            <button type="button" class="cancel-button" @click="deleting = false">Cancel</button>
+          </div>
 
-      <!-- Delete Account Form -->
-      <form v-if="deleting" @submit.prevent="deleteAccount" class="profile-form">
-        <h2 class="text-xl font-semibold text-red-600">Delete Account</h2>
-        <p class="text-sm text-gray-600 mb-3">
-          This action is irreversible. You will not be able to log in again unless reactivated by an admin.
-        </p>
+          <p v-if="deleteMessage" class="text-sm mt-2 text-red-600">{{ deleteMessage }}</p>
+        </form>
+      </div>
 
-        <div class="form-group">
-          <label>Confirm Password <span class="required">*</span></label>
-          <input v-model="confirmPassword" type="password" required />
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn-danger">Delete My Account</button>
-          <button type="button" class="cancel-button" @click="deleting = false">Cancel</button>
-        </div>
-
-        <p v-if="deleteMessage" class="text-sm mt-2 text-red-600">{{ deleteMessage }}</p>
-      </form>
+      <!-- RIGHT: Registered Events -->
+      <div class="registered-events">
+        <h2 class="section-title">Your Registered Events</h2>
+        <ul v-if="registeredEvents.length > 0">
+          <li v-for="event in registeredEvents" :key="event.id" class="event-card">
+            <div class="event-header">
+              <h3>{{ event.title }}</h3>
+              <button class="unregister-button" @click="unregisterFromEvent(event.id)">✕</button>
+            </div>
+            <p>{{ event.date }}</p>
+            <p>{{ event.location }}</p>
+          </li>
+        </ul>
+        <p v-else class="no-events">You haven't registered for any events yet.</p>
+      </div>
     </div>
   </section>
 </template>
+
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '../../stores/authStore'
+import { useToast } from 'vue-toastification'
 
 const router = useRouter()
 const editing = ref(false)
@@ -102,6 +121,8 @@ const success = ref('')
 const confirmPassword = ref('')
 const deleteMessage = ref('')
 const auth = useAuthStore()
+const registeredEvents = ref([])
+const toast = useToast()
 
 const user = reactive({
   name: '',
@@ -130,6 +151,32 @@ const fetchProfile = async () => {
   } catch (err) {
     error.value = 'Failed to load profile. Please login again.'
     router.push('/login')
+  }
+}
+
+const fetchRegisteredEvents = async () => {
+  try {
+    const res = await axios.get('http://localhost:3001/api/user/registered-events', {
+      withCredentials: true
+    })
+    registeredEvents.value = res.data || []
+  } catch (err) {
+    console.error('Failed to load registered events:', err)
+  }
+}
+
+const unregisterFromEvent = async (eventId) => {
+  try {
+    await axios.delete(`http://localhost:3001/api/user/unregister/${eventId}`, {
+      withCredentials: true
+    })
+
+    // Remove from local list
+    registeredEvents.value = registeredEvents.value.filter(e => e.id !== eventId)
+    toast.success(`Successfully unregistered from Event.`)
+  } catch (err) {
+    console.error('Failed to unregister:', err)
+    toast.error('Failed to unregister from event.')
   }
 }
 
@@ -181,7 +228,10 @@ const deleteAccount = async () => {
   }
 }
 
-onMounted(fetchProfile)
+onMounted(() => {
+  fetchProfile()
+  fetchRegisteredEvents()
+})
 </script>
 
 <style scoped>
@@ -324,6 +374,81 @@ input::placeholder {
   background: #dc2626;
   color: white;
   margin-bottom: 0.5rem;
+}
+
+.profile-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .profile-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.registered-events {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  flex: 1;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #111827;
+}
+
+.event-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #f9fafb;
+}
+
+.event-card h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1f2937;
+}
+
+.event-card p {
+  margin: 0.3rem 0;
+  color: #4b5563;
+}
+
+.no-events {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.unregister-button {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #dc2626;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 1rem;
+  line-height: 1;
+}
+
+.unregister-button:hover {
+  color: #b91c1c;
+}
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 </style>

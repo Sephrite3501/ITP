@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
 import contentRoutes from './routes/content.js';
+import eventsRouter from './routes/events.js'
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -38,8 +39,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/content', contentRoutes);
-app.use('/api/committees', committeeRoutes)
-app.use('/api/admin/committees', adminCommitteeRoutes)
+app.use('/api/committees', committeeRoutes);
+app.use('/api/events', eventsRouter);
+app.use('/api/admin/committees', adminCommitteeRoutes);
 
 
 // schedule cron‐based snapshots

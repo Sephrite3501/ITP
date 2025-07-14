@@ -1,6 +1,6 @@
 // server/routes/user.js
 import express from 'express'
-import { getUserProfile, updateProfile, deleteAccount, submitVerificationDocs, getAllUsers,  getVerificationQueue, approveSubmission } from '../controllers/userController.js'
+import { getUserProfile, updateProfile, deleteAccount, submitVerificationDocs, getAllUsers,  getVerificationQueue, approveSubmission, getUserRegisteredEvents, unregisterUserFromEvent } from '../controllers/userController.js'
 import { upload, validateAndSaveFiles } from '../utils/uploadMiddleware.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
@@ -12,6 +12,8 @@ router.use(requireAuth);
 router.get('/user-profile', getUserProfile)
 router.post('/update-profile', updateProfile)
 router.post('/delete-account', deleteAccount)
+router.get('/registered-events', getUserRegisteredEvents)
+router.delete('/unregister/:eventId', unregisterUserFromEvent)
 
 router.post(
   '/upload-documents',

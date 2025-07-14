@@ -9,6 +9,7 @@
           <li v-if="auth.user.role === 'inactive'">
             <router-link to="/upload-verification">Upload Verification</router-link>
           </li>
+          <li><router-link to="/events">Events</router-link></li>
           <li class="welcome-msg">Hi, {{ auth.user.name }}</li>
           <li><button @click="logout" class="logout-btn">Logout</button></li>
         </template>
@@ -26,6 +27,7 @@
           <li><router-link to="/committees">Committees</router-link></li>
           <li><router-link to="/committees/snapshots">Committees History</router-link></li>
           <li><router-link to="/membership">Membership</router-link></li>
+          <li><router-link to="/events">Events</router-link></li>
           <li><router-link to="/login">Login</router-link></li>
           <li><router-link to="/signup">Sign Up</router-link></li>
         </template>
