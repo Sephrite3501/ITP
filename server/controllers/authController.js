@@ -196,13 +196,64 @@ export const loginRequest = async (req, res) => {
   const userAgent = req.headers['user-agent'];
 
   try {
-    const result = await db.query(`SELECT * FROM users WHERE email=$1 AND account_status IN ('inactive', 'active')`, [email]);
+    const result = await db.query(`
+      SELECT * FROM users WHERE email=$1 AND account_status IN ('inactive', 'active')`,
+      [email]
+    );
+
     const user = result.rows[0];
+
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      logSecurityEvent({ traceId, userEmail: email, action: 'login_request', status: 'invalid', ip, userAgent, message: 'Invalid credentials' });
+      // Record failed login attempt
+      await db.query(`
+        INSERT INTO login_attempts (email, success, ip_address, user_agent)
+        VALUES ($1, false, $2, $3)
+      `, [email, ip, userAgent]);
+
+      // Count recent failures (within 10 mins)
+      const windowStart = new Date(Date.now() - 10 * 60 * 1000);
+      const failCountRes = await db.query(`
+        SELECT COUNT(*) FROM login_attempts
+        WHERE email = $1 AND success = false AND created_at > $2
+      `, [email, windowStart]);
+
+      const failCount = parseInt(failCountRes.rows[0].count, 10);
+      if (failCount >= 5) {
+        // Lock user account
+        await db.query(`
+          UPDATE users SET account_status = 'locked', updated_at = NOW()
+          WHERE email = $1
+        `, [email]);
+
+        await logSecurityEvent({
+          traceId,
+          userEmail: email,
+          action: 'login_lockout',
+          status: 'locked',
+          ip,
+          userAgent,
+          message: 'Account locked after too many failed attempts'
+        });
+
+        return res.status(403).json({
+          error: 'Your account has been locked due to multiple failed login attempts. Please contact support.'
+        });
+      }
+
+      await logSecurityEvent({
+        traceId,
+        userEmail: email,
+        action: 'login_request',
+        status: 'invalid',
+        ip,
+        userAgent,
+        message: 'Invalid credentials'
+      });
+
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // ✅ If password is correct, send OTP
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const expires = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
 
@@ -214,7 +265,21 @@ export const loginRequest = async (req, res) => {
 
     await sendOtpEmail(email, code, user.name);
 
-    logSecurityEvent({ traceId, userEmail: email, action: 'login_request', status: 'otp_sent', ip, userAgent, message: 'OTP sent' });
+    // ✅ Record successful login request
+    await db.query(`
+      INSERT INTO login_attempts (email, success, ip_address, user_agent)
+      VALUES ($1, true, $2, $3)
+    `, [email, ip, userAgent]);
+
+    await logSecurityEvent({
+      traceId,
+      userEmail: email,
+      action: 'login_request',
+      status: 'otp_sent',
+      ip,
+      userAgent,
+      message: 'OTP sent'
+    });
 
     return res.json({ message: 'OTP sent to email', success: true });
   } catch (err) {
@@ -222,6 +287,7 @@ export const loginRequest = async (req, res) => {
     return res.status(500).json({ error: 'Internal error' });
   }
 };
+
 
 export const loginVerify = async (req, res) => {
   const traceId = `LOGIN-VER-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;

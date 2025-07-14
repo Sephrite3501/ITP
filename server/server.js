@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
 import contentRoutes from './routes/content.js';
 import eventsRouter from './routes/events.js'
+import adminRoutes from './routes/admin.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -38,6 +39,7 @@ app.use('/assets', express.static(path.join(__dirname, 'assets')))
 app.use('/api/protected', protectedRoutes);
 
 // Routes
+app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/content', contentRoutes);

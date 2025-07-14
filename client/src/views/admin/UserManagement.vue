@@ -28,6 +28,7 @@
             <th>Type</th>
             <th>Status</th>
             <th>Role</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -38,6 +39,11 @@
             <td>{{ user.member_type }}</td>
             <td>{{ user.account_status }}</td>
             <td>{{ user.user_role }}</td>
+            <td>
+              <button v-if="user.account_status !== 'locked'" @click="updateStatus(user.id, 'lock')">Lock</button>
+              <button v-if="user.account_status === 'locked'" @click="updateStatus(user.id, 'unlock')">Unlock</button>
+              <button @click="updateStatus(user.id, 'delete')">Delete</button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -53,7 +59,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-
+import { useToast } from 'vue-toastification'
+const toast = useToast()
 const users = ref([])
 const search = ref('')
 const statusFilter = ref('')
@@ -62,7 +69,7 @@ const limit = 10
 
 const fetchUsers = async () => {
   try {
-    const res = await fetch('http://localhost:3001/api/user/admin/users', { credentials: 'include' })
+    const res = await fetch('http://localhost:3001/api/admin/users', { credentials: 'include' })
     const data = await res.json()
     users.value = data.users || []
   } catch (err) {
@@ -93,6 +100,31 @@ const nextPage = () => {
 
 const prevPage = () => {
   if (page.value > 1) page.value--
+}
+
+const updateStatus = async (userId, action) => {
+  const endpoints = {
+    lock: 'lock-user',
+    unlock: 'unlock-user',
+    delete: 'delete-user'
+  }
+
+  try {
+    const res = await fetch(`http://localhost:3001/api/admin/${endpoints[action]}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    })
+    const data = await res.json()
+
+    if (!res.ok) throw new Error(data.error || 'Failed')
+    toast.success(data.message || `${action} successful`)
+    await fetchUsers()
+  } catch (err) {
+    console.error(`[${action}] failed:`, err)
+    toast.error(`Failed to ${action} user`)
+  }
 }
 </script>
 
@@ -175,4 +207,19 @@ const prevPage = () => {
   background: #cbd5e1;
   cursor: not-allowed;
 }
+
+.user-table td button {
+  margin-right: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+}
+.user-table td button:last-child {
+  background: #dc2626;
+}
+
 </style>

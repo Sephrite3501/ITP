@@ -40,13 +40,13 @@ const queue = ref([])
 const message = ref('')
 
 const fetchQueue = async () => {
-  const res = await axios.get('http://localhost:3001/api/user/admin/verification-queue', { withCredentials: true })
+  const res = await axios.get('http://localhost:3001/api/admin/verification-queue', { withCredentials: true })
   queue.value = res.data
 }
 
 const approveUser = async (submissionId, userId, userName) => {
   try {
-    await axios.post('http://localhost:3001/api/user/admin/approve-user', {
+    await axios.post('http://localhost:3001/api/admin/approve-user', {
       submissionId,
       userId
     }, { withCredentials: true });

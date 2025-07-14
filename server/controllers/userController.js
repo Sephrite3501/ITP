@@ -190,24 +190,7 @@ export const submitProfilePicture = async (req, res) => {
   }
 };
 
-// [GET] Admin: Fetch all users (basic list with optional search/query param)
-export const getAllUsers = async (req, res) => {
-  try {
-    const search = req.query.search?.toLowerCase() || ''
-    const result = await pool.query(
-      `SELECT id, name, email, contact, address, member_type, user_role, account_status
-       FROM users
-       WHERE LOWER(name) LIKE $1 OR LOWER(email) LIKE $1
-       ORDER BY created_at DESC
-       LIMIT 100`,
-      [`%${search}%`]
-    )
-    res.json({ users: result.rows })
-  } catch (err) {
-    console.error('[ADMIN] Fetch users failed:', err)
-    res.status(500).json({ error: 'Failed to fetch users' })
-  }
-}
+
 
 export const submitVerificationDocs = async (req, res) => {
   const traceId = `VERIFY-UP-${Math.random().toString(36).substr(2, 5).toUpperCase()}`
@@ -262,69 +245,9 @@ export const submitVerificationDocs = async (req, res) => {
   }
 }
 
-export const getVerificationQueue = async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT 
-        p.id AS submission_id,
-        u.id AS user_id,
-        u.name,
-        u.email,
-        p.payment_path,
-        p.identity_path,
-        p.submitted_at
-      FROM payment_submissions p
-      JOIN users u ON p.user_id = u.id
-      WHERE p.status = 'pending'
-      ORDER BY p.submitted_at DESC
-    `)
 
-    res.json(result.rows)
-  } catch (err) {
-    console.error('[ADMIN] getVerificationQueue failed:', err)
-    res.status(500).json({ error: 'Failed to fetch verification queue' })
-  }
-}
 
-export const approveSubmission = async (req, res) => {
-  const { submissionId, userId } = req.body
-  const reviewerId = req.user?.id
 
-  if (!submissionId || !userId) {
-    return res.status(400).json({ error: 'Missing submission or user ID' })
-  }
-
-  const traceId = `APPROVE-${Math.random().toString(36).substr(2, 5).toUpperCase()}`
-
-  try {
-    await pool.query(
-      `UPDATE users SET account_status = 'active' WHERE id = $1`,
-      [userId]
-    )
-
-    await pool.query(
-      `UPDATE payment_submissions
-       SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
-       WHERE id = $2`,
-      [reviewerId, submissionId]
-    )
-
-    logSecurityEvent({
-      traceId,
-      userEmail: req.user.email,
-      action: 'approve_user',
-      status: 'success',
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-      message: `Approved user ID ${userId} via submission ${submissionId}`
-    })
-
-    res.json({ message: 'User approved.' })
-  } catch (err) {
-    console.error(`${traceId} approve user error:`, err)
-    res.status(500).json({ error: `Failed to approve user (Ref: ${traceId})` })
-  }
-}
 
 export const getUserFromToken = async (token) => {
   if (!token) return null;
