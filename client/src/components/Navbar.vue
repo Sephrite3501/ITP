@@ -100,7 +100,7 @@ const logout = async () => {
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #16a34a;
+  color: #91afc6;
   width: 5%;
   height: auto;
 }
@@ -121,7 +121,7 @@ const logout = async () => {
 }
 
 .nav-links a.router-link-active {
-  color: #16a34a;
+  color: #91afc6;
 }
 
 .logout-btn {
@@ -193,11 +193,11 @@ li.dropdown {
 /* Hover and active states */
 .dropdown-menu li a:hover {
   background-color: #f3f4f6;
-  color: #16a34a;
+  color: #91afc6;
 }
 
 .dropdown-menu li a.router-link-active {
-  color: #16a34a;
+  color: #91afc6;
 }
 
 </style>

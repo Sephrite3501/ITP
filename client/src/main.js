@@ -22,4 +22,5 @@ app.use(Toast, {
   pauseOnHover: true,
   draggable: true,
 })
+
 app.mount('#app')

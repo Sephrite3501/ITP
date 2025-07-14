@@ -292,7 +292,7 @@ h2 {
 
 .add-button {
   padding: 0.5rem 1rem;
-  background-color: #28a745;
+  background-color: #91afc6;
   color: white;
   border: none;
   border-radius: 6px;
@@ -300,7 +300,7 @@ h2 {
 }
 
 .add-button:hover {
-  background-color: #218838;
+  background-color: #91afc6;
 }
 
 .modal-box form {
@@ -319,7 +319,7 @@ h2 {
 
 .submit-btn {
   padding: 0.5rem;
-  background-color: #007bff;
+  background-color: #91afc6;
   color: white;
   border: none;
   border-radius: 6px;

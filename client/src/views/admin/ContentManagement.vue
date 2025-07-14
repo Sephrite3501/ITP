@@ -196,7 +196,7 @@ textarea {
 
 input[type="text"]:focus,
 textarea:focus {
-  border-color: #00c853;
+  border-color: #91afc6;
   outline: none;
   background-color: #fff;
 }
@@ -209,7 +209,7 @@ button[type="submit"] {
   padding: 0.75rem 2rem;
   font-size: 1rem;
   font-weight: 600;
-  background-color: #00c853;
+  background-color: #91afc6;
   color: white;
   border: none;
   border-radius: 8px;
@@ -218,7 +218,7 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover {
-  background-color: #00b34a;
+  background-color: #91afc6;
 }
 
 .submit-wrapper {
