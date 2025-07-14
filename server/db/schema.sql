@@ -63,6 +63,16 @@ CREATE TABLE IF NOT EXISTS otp_codes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS otp_attempts (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL,
+  ip_address TEXT NOT NULL,
+  attempt_time TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_otp_attempt_window ON otp_attempts (email, ip_address, attempt_time);
+
+
 -- audit logs
 CREATE TABLE IF NOT EXISTS audit_logs (
   id SERIAL PRIMARY KEY,

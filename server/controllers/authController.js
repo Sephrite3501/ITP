@@ -230,31 +230,75 @@ export const loginVerify = async (req, res) => {
   const userAgent = req.headers['user-agent'];
 
   try {
+    // 🔒 Step 1: Rate Limit Check
+    const windowStart = new Date(Date.now() - 10 * 60 * 1000); // last 10 minutes
+    const attemptRes = await db.query(`
+      SELECT COUNT(*) FROM otp_attempts
+      WHERE email = $1 AND ip_address = $2 AND attempt_time > $3
+    `, [email, ip, windowStart]);
+
+    const attemptCount = parseInt(attemptRes.rows[0].count, 10);
+    if (attemptCount >= 5) {
+      await logSecurityEvent({
+        traceId,
+        userEmail: email,
+        action: 'login_verify',
+        status: 'rate_limited',
+        ip,
+        userAgent,
+        message: 'Too many OTP attempts'
+      });
+      return res.status(429).json({ error: 'Too many OTP attempts. Please wait and try again.' });
+    }
+
+    // Step 2: OTP validation
     const result = await db.query(`SELECT * FROM login_otp WHERE email=$1`, [email]);
     const record = result.rows[0];
 
     if (!record || record.code !== otp || new Date(record.expires_at) < new Date()) {
-      logSecurityEvent({ traceId, userEmail: email, action: 'login_verify', status: 'fail', ip, userAgent, message: 'Invalid/expired OTP' });
+      // 🔐 Step 2.1: Record failed attempt
+      await db.query(`INSERT INTO otp_attempts (email, ip_address) VALUES ($1, $2)`, [email, ip]);
+
+      logSecurityEvent({
+        traceId,
+        userEmail: email,
+        action: 'login_verify',
+        status: 'fail',
+        ip,
+        userAgent,
+        message: 'Invalid/expired OTP'
+      });
+
       return res.status(401).json({ error: 'Invalid or expired OTP' });
     }
 
-    const userRes = await db.query(
-      `SELECT id, name, email, user_role FROM users 
+    // Step 3: User lookup + session logic
+    const userRes = await db.query(`
+      SELECT id, name, email, user_role FROM users 
       WHERE email=$1 AND account_status IN ('inactive', 'active')`,
       [email]
     );
 
     if (!userRes.rows.length) {
-      logSecurityEvent({ traceId, userEmail: email, action: 'login_verify', status: 'fail', ip, userAgent, message: 'Account status invalid' });
+      logSecurityEvent({
+        traceId,
+        userEmail: email,
+        action: 'login_verify',
+        status: 'fail',
+        ip,
+        userAgent,
+        message: 'Account status invalid'
+      });
       return res.status(403).json({ error: 'Your account is not permitted to log in.' });
     }
+
     const user = userRes.rows[0];
 
-    await db.query(`DELETE FROM session_tokens WHERE user_id = $1`, [user.id]); // 🧹 cleanup old sessions
-    
-    await db.query(`DELETE FROM login_otp WHERE email=$1`, [email]); // cleanup OTP
+    await db.query(`DELETE FROM session_tokens WHERE user_id = $1`, [user.id]); // Clean up old sessions
+    await db.query(`DELETE FROM login_otp WHERE email=$1`, [email]);            // Clean up used OTP
+    await db.query(`DELETE FROM otp_attempts WHERE email=$1 AND ip_address=$2`, [email, ip]); // 🧹 Clear failed attempt log
 
-    // 🔐 Create and store session token
+    // Step 4: Generate new session
     const token = generateAuthToken();
     await saveSessionToken({
       token,
@@ -264,21 +308,31 @@ export const loginVerify = async (req, res) => {
       userAgent
     });
 
-    // 🍪 Send token as HttpOnly cookie
     res.cookie('auth_token', token, {
       httpOnly: true,
-      secure: false, // change to true in production with HTTPS
+      secure: false, // set to true in production
       sameSite: 'lax',
       maxAge: 60 * 60 * 1000 // 1 hour
     });
 
-    logSecurityEvent({ traceId, userEmail: email, action: 'login_verify', status: 'success', ip, userAgent, message: 'OTP verified, session token issued' });
+    logSecurityEvent({
+      traceId,
+      userEmail: email,
+      action: 'login_verify',
+      status: 'success',
+      ip,
+      userAgent,
+      message: 'OTP verified, session token issued'
+    });
+
     return res.json({ message: 'Login successful', user });
   } catch (err) {
     console.error(`${traceId} login-verify error:`, err);
     return res.status(500).json({ error: 'Internal error' });
   }
 };
+
+
 export const requestReset = async (req, res) => {
   const traceId = `PWD-REQ-${Math.random().toString(36).substr(2,5).toUpperCase()}`;
   const { email } = req.body;
