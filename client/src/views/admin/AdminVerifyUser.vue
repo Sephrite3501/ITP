@@ -22,7 +22,7 @@
             <a :href="`http://localhost:3001/api/protected/download/${user.identity_path?.split('/').pop()}`" target="_blank">ID</a>
           </td>
           <td class="py-2 px-4">
-            <button @click="approveUser(user.id)" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Approve</button>
+            <button @click="approveUser(user.submission_id, user.user_id, user.name)" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Approve</button>
           </td>
         </tr>
       </tbody>
@@ -44,16 +44,22 @@ const fetchQueue = async () => {
   queue.value = res.data
 }
 
-const approveUser = async (userId) => {
+const approveUser = async (submissionId, userId, userName) => {
   try {
-    await axios.post('http://localhost:3001/api/user/admin/approve-user', { userId }, { withCredentials: true })
-    message.value = `User ${userId} approved.`
-    await fetchQueue() // Refresh list
+    await axios.post('http://localhost:3001/api/user/admin/approve-user', {
+      submissionId,
+      userId
+    }, { withCredentials: true });
+
+    message.value = `${userName} approved.`;
+    await fetchQueue();
   } catch (err) {
-    console.error('Approval failed:', err)
-    message.value = err.response?.data?.error || 'Approval failed.'
+    console.error('Approval failed:', err);
+    message.value = err.response?.data?.error || 'Approval failed.';
   }
 }
+
+
 
 onMounted(fetchQueue)
 </script>
