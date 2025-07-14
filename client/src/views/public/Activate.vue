@@ -23,6 +23,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { getFriendlyError } from '@/utils/handleError'
+import { logSecurityClient } from '@/utils/logUtils'
 
 const route = useRoute()
 const success = ref(false)
@@ -30,25 +31,52 @@ const loading = ref(true)
 const error = ref('')
 
 onMounted(async () => {
-  const token = route.query.token;
+  document.title = 'Account Activation | IRC'
+
+  const token = route.query.token
+  const refId = `ACTIVATE-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+
   if (!token) {
-    error.value = 'Invalid activation link. (Ref: ACTIVATE-EMPTY)'
+    error.value = `Invalid activation link. (Ref: ${refId})`
+    await logSecurityClient({
+      category: 'auth',
+      action: 'activation_failed',
+      details: `Missing token (refId: ${refId})`,
+      severity: 'medium'
+    })
     loading.value = false
     return
   }
 
   try {
     const res = await fetch(`http://localhost:3001/api/auth/activate?token=${encodeURIComponent(token)}`)
-
     const result = await res.json()
+
     if (!res.ok) {
-      error.value = result.error || getFriendlyError({ response: { data: result } }, 'ACTIVATE')
+      error.value = getFriendlyError(result, 'Activation failed or expired.', refId)
+      await logSecurityClient({
+        category: 'auth',
+        action: 'activation_failed',
+        details: `Server rejected token (refId: ${refId})`,
+        severity: 'high'
+      })
     } else {
       success.value = true
+      await logSecurityClient({
+        category: 'auth',
+        action: 'activation_success',
+        details: `Account activated (refId: ${refId})`,
+        severity: 'low'
+      })
     }
   } catch (err) {
-    console.error('ACTIVATE error:', err)
-    error.value = getFriendlyError(err, 'ACTIVATE')
+    error.value = getFriendlyError(err, 'Activation error occurred.', refId)
+    await logSecurityClient({
+      category: 'error',
+      action: 'activation_error',
+      details: `Unhandled error: ${err?.message} (refId: ${refId})`,
+      severity: 'high'
+    })
   } finally {
     loading.value = false
   }

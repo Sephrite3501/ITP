@@ -55,8 +55,9 @@
 
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { logSecurityClient } from '@/utils/logUtils'
 
 const router = useRouter()
 const route = useRoute()
@@ -76,11 +77,21 @@ const showPassword = ref(false)
 const showConfirm = ref(false)
 const touched = reactive({ password: false, confirmPassword: false })
 
+const refId = `RESET-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+
 onMounted(async () => {
+  document.title = 'Reset Password | IRC'
+
   token.value = route.query.token || ''
   if (!token.value) {
     tokenValid.value = false
     checkingToken.value = false
+    await logSecurityClient({
+      category: 'auth',
+      action: 'reset_invalid_token',
+      details: `Missing token (refId: ${refId})`,
+      severity: 'high'
+    })
     return
   }
 
@@ -92,8 +103,23 @@ onMounted(async () => {
     })
     const result = await res.json()
     tokenValid.value = result.valid === true
-  } catch {
+
+    if (!tokenValid.value) {
+      await logSecurityClient({
+        category: 'auth',
+        action: 'reset_token_rejected',
+        details: `Invalid or expired token (refId: ${refId})`,
+        severity: 'medium'
+      })
+    }
+  } catch (err) {
     tokenValid.value = false
+    await logSecurityClient({
+      category: 'error',
+      action: 'reset_token_check_error',
+      details: `Token check failed (refId: ${refId})`,
+      severity: 'high'
+    })
   } finally {
     checkingToken.value = false
   }
@@ -117,7 +143,7 @@ const onSubmit = async () => {
   touched.confirmPassword = true
 
   if (!form.password || confirmMismatch.value) {
-    error.value = 'Please ensure passwords match and meet requirements.'
+    error.value = `Please ensure passwords match and meet requirements. (Ref: ${refId})`
     return
   }
 
@@ -135,17 +161,39 @@ const onSubmit = async () => {
     const result = await res.json()
 
     if (!res.ok) {
-      error.value = result.error || 'Failed to reset password.'
+      error.value = result.error
+        ? `${result.error} (Ref: ${refId})`
+        : `Failed to reset password. (Ref: ${refId})`
+
+      await logSecurityClient({
+        category: 'auth',
+        action: 'reset_failed',
+        details: `Reset error (refId: ${refId})`,
+        severity: 'medium'
+      })
     } else {
+      await logSecurityClient({
+        category: 'auth',
+        action: 'reset_success',
+        details: `Password reset successful (refId: ${refId})`,
+        severity: 'low'
+      })
       router.push('/resetpasswordsuccess')
     }
-  } catch {
-    error.value = 'Network error. Please try again.'
+  } catch (err) {
+    error.value = `Network error. Please try again. (Ref: ${refId})`
+    await logSecurityClient({
+      category: 'error',
+      action: 'reset_network_error',
+      details: `Network error on reset (refId: ${refId})`,
+      severity: 'high'
+    })
   } finally {
     loading.value = false
   }
 }
 </script>
+
 
 <style scoped>
 .reset-container {

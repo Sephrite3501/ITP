@@ -83,11 +83,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import DOMPurify from 'dompurify'
 import { useRouter } from 'vue-router'
 import { getFriendlyError } from '@/utils/handleError'
+import { logSecurityClient } from '@/utils/logUtils'
 
+const router = useRouter()
 const form = reactive({
   name: '',
   email: '',
@@ -104,7 +106,7 @@ const errors = reactive({})
 const loading = ref(false)
 const showPassword = reactive({ password: false, confirmPassword: false })
 const touchedFields = reactive({})
-const router = useRouter()
+const refId = `SIGNUP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
 
 const tempEmailDomains = ['mailinator.com', '10minutemail.com', 'guerrillamail.com', 'yopmail.com', 'throwawaymail.com']
 
@@ -118,6 +120,10 @@ const fields = [
   { id: 'memberType', label: 'Member Type:', model: 'memberType', type: 'select' }
 ]
 
+onMounted(() => {
+  document.title = 'Sign Up | IRC'
+})
+
 const passwordStrength = computed(() => {
   if (form.password.length < 8) return 'Weak'
   if (/[A-Z]/.test(form.password) && /[0-9]/.test(form.password) && /[!@#$%^&*]/.test(form.password)) return 'Strong'
@@ -125,7 +131,7 @@ const passwordStrength = computed(() => {
 })
 
 const sanitize = (value) => DOMPurify.sanitize(value)
-const isTempEmail = (email) => tempEmailDomains.some(domain => email.endsWith('@' + domain))
+const isTempEmail = (email) => tempEmailDomains.some(domain => email.toLowerCase().endsWith('@' + domain))
 
 const togglePassword = (field) => { showPassword[field] = !showPassword[field] }
 const getInputType = (field) => showPassword[field.model] ? 'text' : field.type
@@ -141,7 +147,7 @@ const validateField = (field) => {
     case 'email':
       if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
         errors.email = 'Valid email is required'
-      } else if (isTempEmail(value.toLowerCase())) {
+      } else if (isTempEmail(value)) {
         errors.email = 'Temporary emails are not allowed'
       }
       break
@@ -179,15 +185,15 @@ fields.forEach(({ model }) => {
 const executeRecaptcha = () => {
   return new Promise((resolve, reject) => {
     if (!window.grecaptcha || typeof window.grecaptcha.ready !== 'function') {
-      return reject('reCAPTCHA is not loaded properly');
+      return reject('reCAPTCHA is not loaded properly')
     }
     window.grecaptcha.ready(() => {
       window.grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'signup' })
         .then(resolve)
         .catch(reject)
-    });
-  });
-};
+    })
+  })
+}
 
 const onSubmit = async () => {
   Object.keys(errors).forEach(k => delete errors[k])
@@ -196,8 +202,14 @@ const onSubmit = async () => {
   try {
     form.recaptchaToken = await executeRecaptcha()
   } catch (err) {
-    console.error('CAPTCHA failed:', err)
-    errors.recaptcha = 'CAPTCHA verification failed'
+    errors.recaptcha = `CAPTCHA verification failed (Ref: ${refId})`
+    await logSecurityClient({
+      category: 'auth',
+      action: 'signup_recaptcha_fail',
+      details: `CAPTCHA failed (refId: ${refId})`,
+      severity: 'high'
+    })
+    return
   }
 
   Object.keys(form).forEach(key => {
@@ -223,20 +235,42 @@ const onSubmit = async () => {
         })
       })
       const result = await response.json()
+
       if (response.ok && result.message?.includes('Signup successful')) {
+        await logSecurityClient({
+          category: 'auth',
+          action: 'signup_success',
+          details: `New signup: ${form.email} (refId: ${refId})`,
+          severity: 'low'
+        })
         router.push('/signupsuccess')
       } else {
-        errors.email = result.error || getFriendlyError({ response: { data: result } }, 'SIGNUP')
+        errors.email = result.error
+          ? `${result.error} (Ref: ${refId})`
+          : `Signup failed. (Ref: ${refId})`
+
+        await logSecurityClient({
+          category: 'auth',
+          action: 'signup_failed',
+          details: `Signup error for ${form.email} (refId: ${refId})`,
+          severity: 'medium'
+        })
       }
     } catch (err) {
-      console.error('SIGNUP error:', err)
-      errors.email = getFriendlyError(err, 'SIGNUP')
+      errors.email = getFriendlyError(err, 'Signup error.', refId)
+      await logSecurityClient({
+        category: 'error',
+        action: 'signup_exception',
+        details: `Unhandled error for ${form.email} (refId: ${refId})`,
+        severity: 'high'
+      })
     } finally {
       loading.value = false
     }
   }
 }
 </script>
+
 
 <style scoped>
 .signup-container {

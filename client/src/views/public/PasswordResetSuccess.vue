@@ -10,8 +10,22 @@
 
 
 <script setup>
-// No script needed unless you want to auto-redirect after a timeout
+import { onMounted } from 'vue'
+import { logSecurityClient } from '@/utils/logUtils'
+
+onMounted(() => {
+  document.title = 'Password Reset Success | IRC'
+
+  // Optional: log for analytics or audit
+  logSecurityClient({
+    category: 'auth',
+    action: 'reset_success_page_view',
+    details: 'User landed on reset password success page',
+    severity: 'low'
+  })
+})
 </script>
+
 
 <style scoped>
 .success-container {

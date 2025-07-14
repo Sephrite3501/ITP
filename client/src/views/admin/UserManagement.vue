@@ -60,6 +60,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
+import { logSecurityClient } from '@/utils/logUtils'
+
 const toast = useToast()
 const users = ref([])
 const search = ref('')
@@ -67,17 +69,20 @@ const statusFilter = ref('')
 const page = ref(1)
 const limit = 10
 
+onMounted(() => {
+  document.title = 'Admin | User Management'
+  fetchUsers()
+})
+
 const fetchUsers = async () => {
   try {
     const res = await fetch('http://localhost:3001/api/admin/users', { credentials: 'include' })
     const data = await res.json()
     users.value = data.users || []
   } catch (err) {
-    console.error('Failed to load users:', err)
+    toast.error('Failed to load user list.')
   }
 }
-
-onMounted(fetchUsers)
 
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
@@ -97,12 +102,12 @@ const paginatedUsers = computed(() => {
 const nextPage = () => {
   if (page.value * limit < filteredUsers.value.length) page.value++
 }
-
 const prevPage = () => {
   if (page.value > 1) page.value--
 }
 
 const updateStatus = async (userId, action) => {
+  const refId = `ADMIN-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
   const endpoints = {
     lock: 'lock-user',
     unlock: 'unlock-user',
@@ -116,17 +121,33 @@ const updateStatus = async (userId, action) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId })
     })
-    const data = await res.json()
 
-    if (!res.ok) throw new Error(data.error || 'Failed')
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Request failed')
+
     toast.success(data.message || `${action} successful`)
+    await logSecurityClient({
+      category: 'admin',
+      action: `admin_${action}_user`,
+      refId,
+      details: `User ${userId} ${action}ed by admin (refId: ${refId})`,
+      severity: 'high'
+    })
+
     await fetchUsers()
   } catch (err) {
-    console.error(`[${action}] failed:`, err)
-    toast.error(`Failed to ${action} user`)
+    toast.error(`Failed to ${action} user. (Ref: ${refId})`)
+    await logSecurityClient({
+      category: 'error',
+      action: `admin_${action}_failed`,
+      refId,
+      details: `Failed to ${action} user ${userId} (refId: ${refId})`,
+      severity: 'critical'
+    })
   }
 }
 </script>
+
 
 <style scoped>
 .admin-container {

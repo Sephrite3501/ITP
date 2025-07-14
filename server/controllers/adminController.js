@@ -3,82 +3,128 @@ import { logSecurityEvent } from '../services/logService.js';
 
 export const lockUser = async (req, res) => {
   const { userId } = req.body;
-  const adminId = req.user.id; // populated by requireAuth + requireAdmin
+  const adminId = req.user.id;
+  const refId = `ADMIN-${userId}-LOCK`;
 
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   try {
-    await db.query(`UPDATE users SET account_status = 'locked', updated_at = NOW() WHERE id = $1`, [userId]);
+    await db.query(
+      `UPDATE users SET account_status = 'locked', updated_at = NOW() WHERE id = $1`,
+      [userId]
+    );
 
     await logSecurityEvent({
       userId: adminId,
       action: 'admin_lock_user',
       details: `User ${userId} locked`,
-      refId: `ADMIN-${userId}-LOCK`,
-      req
+      refId,
+      category: 'admin',
+      type: 'account',
+      severity: 'medium',
+      req,
     });
 
     res.json({ message: `User ${userId} locked.` });
   } catch (err) {
-    console.error('[Admin Lock User] Error:', err);
-    res.status(500).json({ error: 'Failed to lock user' });
+    await logSecurityEvent({
+      userId: adminId,
+      action: 'admin_lock_user',
+      details: `Error locking user ${userId}: ${err.message}`,
+      refId,
+      category: 'admin',
+      type: 'account',
+      severity: 'high',
+      req,
+    });
+    res.status(500).json({ error: `Failed to lock user (Ref: ${refId})` });
   }
 };
 
 export const unlockUser = async (req, res) => {
   const { userId } = req.body;
   const adminId = req.user.id;
+  const refId = `ADMIN-${userId}-UNLOCK`;
 
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   try {
-    await db.query(`UPDATE users SET account_status = 'active', updated_at = NOW() WHERE id = $1`, [userId]);
+    await db.query(
+      `UPDATE users SET account_status = 'active', updated_at = NOW() WHERE id = $1`,
+      [userId]
+    );
 
     await logSecurityEvent({
       userId: adminId,
       action: 'admin_unlock_user',
       details: `User ${userId} unlocked`,
-      refId: `ADMIN-${userId}-UNLOCK`,
-      req
+      refId,
+      category: 'admin',
+      type: 'account',
+      severity: 'medium',
+      req,
     });
 
     res.json({ message: `User ${userId} unlocked.` });
   } catch (err) {
-    console.error('[Admin Unlock User] Error:', err);
-    res.status(500).json({ error: 'Failed to unlock user' });
+    await logSecurityEvent({
+      userId: adminId,
+      action: 'admin_unlock_user',
+      details: `Error unlocking user ${userId}: ${err.message}`,
+      refId,
+      category: 'admin',
+      type: 'account',
+      severity: 'high',
+      req,
+    });
+    res.status(500).json({ error: `Failed to unlock user (Ref: ${refId})` });
   }
 };
 
 export const softDeleteUser = async (req, res) => {
   const { userId } = req.body;
   const adminId = req.user.id;
+  const refId = `ADMIN-${userId}-DELETE`;
 
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   try {
-    await db.query(`
-      UPDATE users SET account_status = 'deleted', updated_at = NOW()
-      WHERE id = $1
-    `, [userId]);
+    await db.query(
+      `UPDATE users SET account_status = 'deleted', updated_at = NOW() WHERE id = $1`,
+      [userId]
+    );
 
     await logSecurityEvent({
       userId: adminId,
       action: 'admin_delete_user',
       details: `User ${userId} soft-deleted`,
-      refId: `ADMIN-${userId}-DELETE`,
-      req
+      refId,
+      category: 'admin',
+      type: 'account',
+      severity: 'medium',
+      req,
     });
 
     res.json({ message: `User ${userId} deleted.` });
   } catch (err) {
-    console.error('[Admin Delete User] Error:', err);
-    res.status(500).json({ error: 'Failed to delete user' });
+    await logSecurityEvent({
+      userId: adminId,
+      action: 'admin_delete_user',
+      details: `Error deleting user ${userId}: ${err.message}`,
+      refId,
+      category: 'admin',
+      type: 'account',
+      severity: 'high',
+      req,
+    });
+    res.status(500).json({ error: `Failed to delete user (Ref: ${refId})` });
   }
 };
 
 export const getAllUsers = async (req, res) => {
+  const traceId = `ADMIN-USERS-${Date.now()}`;
   try {
-    const search = req.query.search?.toLowerCase() || ''
+    const search = req.query.search?.toLowerCase() || '';
     const result = await db.query(
       `SELECT id, name, email, contact, address, member_type, user_role, account_status
        FROM users
@@ -86,15 +132,25 @@ export const getAllUsers = async (req, res) => {
        ORDER BY created_at DESC
        LIMIT 100`,
       [`%${search}%`]
-    )
-    res.json({ users: result.rows })
+    );
+    res.json({ users: result.rows });
   } catch (err) {
-    console.error('[ADMIN] Fetch users failed:', err)
-    res.status(500).json({ error: 'Failed to fetch users' })
+    await logSecurityEvent({
+      action: 'admin_get_users',
+      status: 'fail',
+      refId: traceId,
+      message: `Failed to fetch users: ${err.message}`,
+      category: 'admin',
+      type: 'account',
+      severity: 'high',
+      req,
+    });
+    res.status(500).json({ error: `Failed to fetch users (Ref: ${traceId})` });
   }
-}
+};
 
 export const getVerificationQueue = async (req, res) => {
+  const refId = `VERIFYQ-${Date.now()}`;
   try {
     const result = await db.query(`
       SELECT 
@@ -109,51 +165,74 @@ export const getVerificationQueue = async (req, res) => {
       JOIN users u ON p.user_id = u.id
       WHERE p.status = 'pending'
       ORDER BY p.submitted_at DESC
-    `)
-
-    res.json(result.rows)
+    `);
+    res.json(result.rows);
   } catch (err) {
-    console.error('[ADMIN] getVerificationQueue failed:', err)
-    res.status(500).json({ error: 'Failed to fetch verification queue' })
+    await logSecurityEvent({
+      action: 'admin_get_verification_queue',
+      status: 'fail',
+      refId,
+      message: `Failed to get verification queue: ${err.message}`,
+      category: 'admin',
+      type: 'submission',
+      severity: 'medium',
+      req,
+    });
+    res.status(500).json({ error: `Failed to fetch verification queue (Ref: ${refId})` });
   }
-}
+};
 
 export const approveSubmission = async (req, res) => {
-  const { submissionId, userId } = req.body
-  const reviewerId = req.user?.id
+  const { submissionId, userId } = req.body;
+  const reviewerId = req.user?.id;
+  const refId = `APPROVE-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
   if (!submissionId || !userId) {
-    return res.status(400).json({ error: 'Missing submission or user ID' })
+    return res.status(400).json({ error: 'Missing submission or user ID' });
   }
-
-  const traceId = `APPROVE-${Math.random().toString(36).substr(2, 5).toUpperCase()}`
 
   try {
     await db.query(
       `UPDATE users SET account_status = 'active' WHERE id = $1`,
       [userId]
-    )
+    );
 
     await db.query(
       `UPDATE payment_submissions
        SET status = 'approved', reviewed_by = $1, reviewed_at = NOW()
        WHERE id = $2`,
       [reviewerId, submissionId]
-    )
+    );
 
-    logSecurityEvent({
-      traceId,
+    await logSecurityEvent({
+      traceId: refId,
+      userId: reviewerId,
       userEmail: req.user.email,
       action: 'approve_user',
+      message: `Approved user ID ${userId} via submission ${submissionId}`,
       status: 'success',
+      category: 'admin',
+      type: 'submission',
+      severity: 'medium',
       ip: req.ip,
       userAgent: req.headers['user-agent'],
-      message: `Approved user ID ${userId} via submission ${submissionId}`
-    })
+    });
 
-    res.json({ message: 'User approved.' })
+    res.json({ message: 'User approved.' });
   } catch (err) {
-    console.error(`${traceId} approve user error:`, err)
-    res.status(500).json({ error: `Failed to approve user (Ref: ${traceId})` })
+    await logSecurityEvent({
+      traceId: refId,
+      userId: reviewerId,
+      action: 'approve_user',
+      message: `Failed to approve user ${userId}: ${err.message}`,
+      status: 'fail',
+      category: 'admin',
+      type: 'submission',
+      severity: 'high',
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    res.status(500).json({ error: `Failed to approve user (Ref: ${refId})` });
   }
-}
+};

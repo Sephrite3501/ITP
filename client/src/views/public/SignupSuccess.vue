@@ -11,8 +11,22 @@
 </template>
 
 <script setup>
-// No script needed after removing resend logic
+import { onMounted } from 'vue'
+import { logSecurityClient } from '@/utils/logUtils'
+
+onMounted(() => {
+  document.title = 'Signup Success | IRC'
+
+  // Optional: track that the user reached this confirmation screen
+  logSecurityClient({
+    category: 'auth',
+    action: 'signup_success_page_view',
+    details: 'User landed on signup success confirmation screen',
+    severity: 'low'
+  })
+})
 </script>
+
 
 <style scoped>
 .success-container {

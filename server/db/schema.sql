@@ -72,19 +72,6 @@ CREATE TABLE IF NOT EXISTS otp_attempts (
 
 CREATE INDEX IF NOT EXISTS idx_otp_attempt_window ON otp_attempts (email, ip_address, attempt_time);
 
-
--- audit logs
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER,
-  action TEXT NOT NULL,
-  details TEXT,
-  ref_id TEXT,
-  ip_address TEXT,
-  user_agent TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
 -- login attempts (lockout)
 CREATE TABLE IF NOT EXISTS login_attempts (
   id SERIAL PRIMARY KEY,
@@ -146,3 +133,63 @@ CREATE TABLE IF NOT EXISTS event_registrations (
 );
 
 
+CREATE TABLE IF NOT EXISTS auth_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER,
+  action TEXT NOT NULL,          -- e.g. login_success, login_failed, logout
+  details TEXT,
+  ref_id TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  severity TEXT,                 -- low / medium / high / critical
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+CREATE TABLE IF NOT EXISTS admin_logs (
+  id SERIAL PRIMARY KEY,
+  admin_id INTEGER,
+  action TEXT NOT NULL,          -- e.g. approve_user, change_role
+  target_user_id INTEGER,
+  details TEXT,
+  ref_id TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  severity TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+CREATE TABLE IF NOT EXISTS csrf_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER,
+  reason TEXT NOT NULL,          -- e.g. token_mismatch, expired
+  ref_id TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  severity TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+CREATE TABLE IF NOT EXISTS error_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER,
+  error_type TEXT NOT NULL,      -- e.g. 500_server_error, db_failure
+  message TEXT,
+  stack TEXT,
+  ref_id TEXT,
+  severity TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+CREATE TABLE IF NOT EXISTS session_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER,
+  session_id TEXT,
+  action TEXT NOT NULL,          -- e.g. session_created, session_invalidated
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

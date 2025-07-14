@@ -111,8 +111,12 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '../../stores/authStore'
 import { useToast } from 'vue-toastification'
+import { logSecurityClient } from '@/utils/logUtils'
 
 const router = useRouter()
+const auth = useAuthStore()
+const toast = useToast()
+
 const editing = ref(false)
 const deleting = ref(false)
 const loading = ref(false)
@@ -120,9 +124,7 @@ const error = ref('')
 const success = ref('')
 const confirmPassword = ref('')
 const deleteMessage = ref('')
-const auth = useAuthStore()
-const registeredEvents = ref([])
-const toast = useToast()
+const refId = `PROFILE-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
 const user = reactive({
   name: '',
@@ -138,6 +140,8 @@ const form = reactive({
   newPassword: ''
 })
 
+const registeredEvents = ref([])
+
 const fetchProfile = async () => {
   try {
     const meRes = await axios.get('http://localhost:3001/api/auth/me', { withCredentials: true })
@@ -149,7 +153,13 @@ const fetchProfile = async () => {
     form.contact = user.contact
     form.address = user.address
   } catch (err) {
-    error.value = 'Failed to load profile. Please login again.'
+    error.value = `Failed to load profile. Please login again. (Ref: ${refId})`
+    await logSecurityClient({
+      category: 'error',
+      action: 'profile_load_failed',
+      details: `Failed to load profile (refId: ${refId})`,
+      severity: 'high'
+    })
     router.push('/login')
   }
 }
@@ -161,7 +171,12 @@ const fetchRegisteredEvents = async () => {
     })
     registeredEvents.value = res.data || []
   } catch (err) {
-    console.error('Failed to load registered events:', err)
+    await logSecurityClient({
+      category: 'error',
+      action: 'fetch_registered_events_failed',
+      details: `Failed to fetch registered events (refId: ${refId})`,
+      severity: 'low'
+    })
   }
 }
 
@@ -170,20 +185,47 @@ const unregisterFromEvent = async (eventId) => {
     await axios.delete(`http://localhost:3001/api/user/unregister/${eventId}`, {
       withCredentials: true
     })
-
-    // Remove from local list
     registeredEvents.value = registeredEvents.value.filter(e => e.id !== eventId)
-    toast.success(`Successfully unregistered from Event.`)
+    toast.success(`Successfully unregistered from event.`)
+
+    await logSecurityClient({
+      category: 'user',
+      action: 'event_unregistered',
+      details: `User unregistered from event ID ${eventId} (refId: ${refId})`,
+      severity: 'low'
+    })
   } catch (err) {
-    console.error('Failed to unregister:', err)
-    toast.error('Failed to unregister from event.')
+    toast.error(`Failed to unregister from event. (Ref: ${refId})`)
+    await logSecurityClient({
+      category: 'error',
+      action: 'event_unregister_failed',
+      details: `Failed to unregister from event ID ${eventId} (refId: ${refId})`,
+      severity: 'medium'
+    })
   }
+}
+
+const validateInputs = () => {
+  if (!/^[\d+\s\-]{7,15}$/.test(form.contact)) {
+    error.value = `Enter a valid contact number. (Ref: ${refId})`
+    return false
+  }
+  if (form.address.length < 5 || form.address.length > 100) {
+    error.value = `Enter a valid address (5–100 chars). (Ref: ${refId})`
+    return false
+  }
+  return true
 }
 
 const saveChanges = async () => {
   error.value = ''
   success.value = ''
   loading.value = true
+
+  if (!validateInputs()) {
+    loading.value = false
+    return
+  }
 
   try {
     await axios.post(
@@ -200,12 +242,25 @@ const saveChanges = async () => {
 
     user.contact = form.contact
     user.address = form.address
-    success.value = 'Profile updated successfully.'
     editing.value = false
     form.currentPassword = ''
     form.newPassword = ''
+    success.value = 'Profile updated successfully.'
+
+    await logSecurityClient({
+      category: 'user',
+      action: 'profile_updated',
+      details: `Profile updated for ${user.email} (refId: ${refId})`,
+      severity: 'low'
+    })
   } catch (err) {
-    error.value = err.response?.data?.error || 'Update failed.'
+    error.value = err.response?.data?.error || `Update failed. (Ref: ${refId})`
+    await logSecurityClient({
+      category: 'error',
+      action: 'profile_update_failed',
+      details: `Update failed for ${user.email} (refId: ${refId})`,
+      severity: 'medium'
+    })
   } finally {
     loading.value = false
   }
@@ -218,21 +273,44 @@ const deleteAccount = async () => {
       email,
       currentPassword: confirmPassword.value
     }, { withCredentials: true })
-    deleteMessage.value = res.data.message || 'Account deleted successfully.'
-    setTimeout(() => {
-  auth.clearUser()
-  router.push('/login')
-}, 1500)
+
+    // Show success toast
+    toast.success(res.data.message || 'Account deleted successfully.')
+
+    await logSecurityClient({
+      category: 'user',
+      action: 'account_deleted',
+      details: `User ${email} deleted their account (refId: ${refId})`,
+      severity: 'high'
+    })
+
+    // Clear user state and redirect
+    auth.clearUser()
+    await axios.post('/api/auth/logout', {}, { withCredentials: true }) // optional cleanup
+    router.push('/login')
+
   } catch (err) {
-    deleteMessage.value = err.response?.data?.error || 'Failed to delete account.'
+    const msg = err.response?.data?.error || `Failed to delete account. (Ref: ${refId})`
+    toast.error(msg)
+    deleteMessage.value = msg
+
+    await logSecurityClient({
+      category: 'error',
+      action: 'account_deletion_failed',
+      details: `Deletion failed for ${auth.user.email} (refId: ${refId})`,
+      severity: 'high'
+    })
   }
 }
 
+
 onMounted(() => {
+  document.title = 'User Profile | IRC'
   fetchProfile()
   fetchRegisteredEvents()
 })
 </script>
+
 
 <style scoped>
 .profile-container {

@@ -27,8 +27,9 @@
 
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { getFriendlyError } from '@/utils/handleError'
+import { logSecurityClient } from '@/utils/logUtils'
 
 const form = reactive({
   email: ''
@@ -36,6 +37,11 @@ const form = reactive({
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
+const refId = `RESETREQ-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+
+onMounted(() => {
+  document.title = 'Reset Password Request | IRC'
+})
 
 const executeRecaptcha = () => {
   return new Promise((resolve, reject) => {
@@ -59,7 +65,13 @@ const onSubmit = async () => {
     const token = await executeRecaptcha()
 
     if (!form.email || !form.email.includes('@')) {
-      error.value = 'Please enter a valid email address'
+      error.value = `Please enter a valid email address (Ref: ${refId})`
+      await logSecurityClient({
+        category: 'auth',
+        action: 'reset_request_invalid_input',
+        details: `User submitted invalid email input (refId: ${refId})`,
+        severity: 'medium'
+      })
       return
     }
 
@@ -75,18 +87,38 @@ const onSubmit = async () => {
     const result = await response.json()
 
     if (!response.ok || result?.error) {
-      error.value = getFriendlyError({ response: { data: result } }, 'RESETREQ')
+      error.value = getFriendlyError({ response: { data: result } }, 'Reset failed.', refId)
+
+      await logSecurityClient({
+        category: 'auth',
+        action: 'reset_request_failed',
+        details: `Reset request rejected by server (refId: ${refId})`,
+        severity: 'medium'
+      })
     } else {
       success.value = result.message || 'If your email is registered, a reset link has been sent.'
+      await logSecurityClient({
+        category: 'auth',
+        action: 'reset_request_success',
+        details: `Reset link sent (refId: ${refId})`,
+        severity: 'low'
+      })
     }
   } catch (err) {
-    console.error('RESETREQ error:', err)
-    error.value = getFriendlyError(err, 'RESETREQ')
+    error.value = getFriendlyError(err, 'Reset request error.', refId)
+
+    await logSecurityClient({
+      category: 'error',
+      action: 'reset_request_network_error',
+      details: `Network error during reset request (refId: ${refId})`,
+      severity: 'high'
+    })
   } finally {
     loading.value = false
   }
 }
 </script>
+
 
 
 <style scoped>

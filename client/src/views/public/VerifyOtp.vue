@@ -35,20 +35,31 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/authStore'
+import { logSecurityClient } from '@/utils/logUtils'
+import { getFriendlyError } from '@/utils/handleError'
 
 const router = useRouter()
 const route = useRoute()
-const auth = useAuthStore() 
+const auth = useAuthStore()
 
 const email = ref('')
 const otp = ref('')
 const errorMessage = ref('')
 const loading = ref(false)
+const refId = `OTP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
 
 onMounted(() => {
+  document.title = 'Verify OTP | IRC'
+
   email.value = route.query.email || ''
   if (!email.value) {
-    errorMessage.value = 'Missing email. Please go back and try again.'
+    errorMessage.value = `Missing email. Please go back and try again. (Ref: ${refId})`
+    logSecurityClient({
+      category: 'auth',
+      action: 'otp_email_missing',
+      details: `No email in query string (refId: ${refId})`,
+      severity: 'medium'
+    })
   }
 })
 
@@ -67,25 +78,48 @@ const onSubmit = async () => {
     const data = await res.json()
 
     if (!res.ok) {
-      errorMessage.value = data.error || 'OTP verification failed'
+      errorMessage.value = data.error
+        ? `${data.error} (Ref: ${refId})`
+        : `OTP verification failed. (Ref: ${refId})`
+
+      await logSecurityClient({
+        category: 'auth',
+        action: 'otp_verify_failed',
+        details: `OTP failed for ${email.value} (refId: ${refId})`,
+        severity: 'medium'
+      })
     } else {
-      const res = await fetch('http://localhost:3001/api/auth/me', { credentials: 'include' })
-      const data = await res.json()
-      if (res.ok && data?.user) {
-        auth.setUser(data.user)
+      // Fetch session details
+      const sessionRes = await fetch('http://localhost:3001/api/auth/me', { credentials: 'include' })
+      const sessionData = await sessionRes.json()
+      if (sessionRes.ok && sessionData?.user) {
+        auth.setUser(sessionData.user)
       }
-      // router.push('/userprofile')
+
+      await logSecurityClient({
+        category: 'auth',
+        action: 'otp_verify_success',
+        details: `OTP success for ${email.value} (refId: ${refId})`,
+        severity: 'low'
+      })
+
       await router.replace({ path: '/userprofile' })
       await router.go()
     }
   } catch (err) {
-    console.error('OTP verification error:', err)
-    errorMessage.value = 'Unexpected error. Please try again.'
+    errorMessage.value = getFriendlyError(err, 'OTP verification failed.', refId)
+    await logSecurityClient({
+      category: 'error',
+      action: 'otp_verify_network_error',
+      details: `Unexpected error for ${email.value} (refId: ${refId})`,
+      severity: 'high'
+    })
   } finally {
     loading.value = false
   }
 }
 </script>
+
 
 
 <style scoped>

@@ -5,6 +5,10 @@ import { logSecurityEvent } from '../services/logService.js';
 import sanitizeHtml from 'sanitize-html';
 import { validateAndSaveFiles } from '../utils/uploadMiddleware.js';
 
+const findUserByEmail = async (email) => {
+  const res = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
+  return res.rows[0];
+};
 
 export const getUserProfile = async (req, res) => {
   const traceId = `USR-PROF-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
@@ -13,22 +17,18 @@ export const getUserProfile = async (req, res) => {
   const userAgent = req.headers['user-agent'];
 
   if (!email) {
-    logSecurityEvent({ traceId, action: 'get_user_profile', status: 'failed', ip, userAgent, message: 'Missing email' });
+    await logSecurityEvent({ traceId, action: 'get_user_profile', status: 'failed', ip, userAgent, message: 'Missing email' });
     return res.status(400).json({ error: `Email is required. (Ref: ${traceId})` });
   }
 
   try {
-    const { rows } = await pool.query(
-      'SELECT name, email, contact, address, member_type, account_status FROM users WHERE email=$1',
-      [email]
-    );
+    const user = await findUserByEmail(email);
 
-    if (!rows.length) {
-      logSecurityEvent({ traceId, userEmail: email, action: 'get_user_profile', status: 'not_found', ip, userAgent, message: 'User not found' });
+    if (!user) {
+      await logSecurityEvent({ traceId, userEmail: email, action: 'get_user_profile', status: 'not_found', ip, userAgent, message: 'User not found' });
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = rows[0];
     res.json({
       name: user.name,
       email: user.email,
@@ -39,10 +39,10 @@ export const getUserProfile = async (req, res) => {
       submittedDocs: [] // Future expansion
     });
 
-    logSecurityEvent({ traceId, userEmail: email, action: 'get_user_profile', status: 'success', ip, userAgent, message: 'Profile returned' });
+    await logSecurityEvent({ traceId, userEmail: email, action: 'get_user_profile', status: 'success', ip, userAgent, message: 'Profile returned' });
   } catch (err) {
     console.error(`${traceId} user-profile error:`, err);
-    logSecurityEvent({ traceId, userEmail: email, action: 'get_user_profile', status: 'error', ip, userAgent, message: err.message });
+    await logSecurityEvent({ traceId, userEmail: email, action: 'get_user_profile', status: 'error', ip, userAgent, message: err.message });
     res.status(500).json({ error: `Internal server error. (Ref: ${traceId})` });
   }
 };
@@ -54,21 +54,20 @@ export const updateProfile = async (req, res) => {
   const userAgent = req.headers['user-agent'];
 
   if (!email || !currentPassword) {
-    logSecurityEvent({ traceId, action: 'update_profile', status: 'failed', ip, userAgent, message: 'Missing email or current password' });
+    await logSecurityEvent({ traceId, action: 'update_profile', status: 'failed', ip, userAgent, message: 'Missing email or current password' });
     return res.status(400).json({ error: `Email and current password are required. (Ref: ${traceId})` });
   }
 
   try {
-    const userRes = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
-    const user = userRes.rows[0];
+    const user = await findUserByEmail(email);
     if (!user) {
-      logSecurityEvent({ traceId, userEmail: email, action: 'update_profile', status: 'not_found', ip, userAgent, message: 'User not found' });
+      await logSecurityEvent({ traceId, userEmail: email, action: 'update_profile', status: 'not_found', ip, userAgent, message: 'User not found' });
       return res.status(404).json({ error: `User not found. (Ref: ${traceId})` });
     }
 
     const passwordValid = await bcrypt.compare(currentPassword, user.password_hash);
     if (!passwordValid) {
-      logSecurityEvent({ traceId, userEmail: email, action: 'update_profile', status: 'denied', ip, userAgent, message: 'Incorrect current password' });
+      await logSecurityEvent({ traceId, userEmail: email, action: 'update_profile', status: 'denied', ip, userAgent, message: 'Incorrect current password' });
       return res.status(403).json({ error: `Current password is incorrect. (Ref: ${traceId})` });
     }
 
@@ -78,11 +77,11 @@ export const updateProfile = async (req, res) => {
 
     if (contact) {
       updates.push(`contact=$${i++}`);
-      values.push(contact);
+      values.push(sanitizeHtml(contact));
     }
     if (address) {
       updates.push(`address=$${i++}`);
-      values.push(address);
+      values.push(sanitizeHtml(address));
     }
     if (newPassword) {
       const hashed = await bcrypt.hash(newPassword, 10);
@@ -97,7 +96,7 @@ export const updateProfile = async (req, res) => {
     values.push(email); // WHERE clause
     await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE email=$${i}`, values);
 
-    logSecurityEvent({
+    await logSecurityEvent({
       traceId,
       userEmail: email,
       action: 'update_profile',
@@ -111,7 +110,7 @@ export const updateProfile = async (req, res) => {
 
   } catch (err) {
     console.error(`${traceId} update-profile error:`, err);
-    logSecurityEvent({ traceId, userEmail: email, action: 'update_profile', status: 'error', ip, userAgent, message: err.message });
+    await logSecurityEvent({ traceId, userEmail: email, action: 'update_profile', status: 'error', ip, userAgent, message: err.message });
     res.status(500).json({ error: `Internal server error. (Ref: ${traceId})` });
   }
 };
@@ -123,74 +122,32 @@ export const deleteAccount = async (req, res) => {
   const userAgent = req.headers['user-agent'];
 
   if (!email || !currentPassword) {
-    logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'failed', ip, userAgent, message: 'Missing credentials' });
+    await logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'failed', ip, userAgent, message: 'Missing credentials' });
     return res.status(400).json({ error: `Email and password are required. (Ref: ${traceId})` });
   }
 
   try {
-    const result = await pool.query('SELECT password_hash FROM users WHERE email=$1 AND account_status=$2', [email, 'inactive']);
+    const result = await pool.query('SELECT password_hash FROM users WHERE email=$1 AND account_status  != $2', [email, 'deleted']);
     if (!result.rows.length) {
-      logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'not_found', ip, userAgent, message: 'User not found or already deleted' });
+      await logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'not_found', ip, userAgent, message: 'User not found or already deleted' });
       return res.status(404).json({ error: `User not found. (Ref: ${traceId})` });
     }
 
     const validPassword = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
     if (!validPassword) {
-      logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'unauthorized', ip, userAgent, message: 'Invalid password' });
+      await logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'unauthorized', ip, userAgent, message: 'Invalid password' });
       return res.status(401).json({ error: `Invalid password. (Ref: ${traceId})` });
     }
 
     await pool.query('UPDATE users SET account_status=$1 WHERE email=$2', ['deleted', email]);
-    logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'success', ip, userAgent, message: 'Soft-deleted account' });
+    await logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'success', ip, userAgent, message: 'Soft-deleted account' });
     return res.status(200).json({ message: 'Account deleted successfully.' });
   } catch (err) {
     console.error(`${traceId} delete-account error:`, err);
-    logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'error', ip, userAgent, message: err.message });
+    await logSecurityEvent({ traceId, userEmail: email, action: 'delete_account', status: 'error', ip, userAgent, message: err.message });
     return res.status(500).json({ error: `Internal server error. (Ref: ${traceId})` });
   }
 };
-
-export const submitProfilePicture = async (req, res) => {
-  const traceId = `PROFILE-PIC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-  const email = req.session.user?.email;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const userAgent = req.headers['user-agent'];
-
-  try {
-    const { profilePicture } = await validateAndSaveFiles(req.files, email);
-
-    await pool.query(
-      'UPDATE users SET profile_picture_path=$1 WHERE email=$2',
-      [profilePicture, email]
-    );
-
-    logSecurityEvent({
-      traceId,
-      userEmail: email,
-      action: 'upload_profile_pic',
-      status: 'success',
-      ip,
-      userAgent,
-      message: 'Profile picture uploaded'
-    });
-
-    res.status(200).json({ message: 'Profile picture uploaded successfully.' });
-  } catch (err) {
-    console.error(`${traceId} upload-profile-pic error:`, err);
-    logSecurityEvent({
-      traceId,
-      userEmail: email,
-      action: 'upload_profile_pic',
-      status: 'error',
-      ip,
-      userAgent,
-      message: err.message
-    });
-    res.status(400).json({ error: `Upload failed: ${err.message}` });
-  }
-};
-
-
 
 export const submitVerificationDocs = async (req, res) => {
   const traceId = `VERIFY-UP-${Math.random().toString(36).substr(2, 5).toUpperCase()}`
@@ -199,7 +156,7 @@ export const submitVerificationDocs = async (req, res) => {
   const userAgent = req.headers['user-agent']
 
   if (!req.files || !req.files.paymentProof || !req.files.identityProof) {
-    logSecurityEvent({ traceId, userEmail: email, action: 'submit_verification_docs', status: 'failed', ip, userAgent, message: 'Missing required files' })
+    await logSecurityEvent({ traceId, userEmail: email, action: 'submit_verification_docs', status: 'failed', ip, userAgent, message: 'Missing required files' })
     return res.status(400).json({ error: 'Both payment and identity documents are required.' })
   }
 
@@ -219,7 +176,7 @@ export const submitVerificationDocs = async (req, res) => {
       [userId, paymentProof, identityProof]
     )
 
-    logSecurityEvent({
+    await logSecurityEvent({
       traceId,
       userEmail: email,
       action: 'submit_verification_docs',
@@ -232,7 +189,7 @@ export const submitVerificationDocs = async (req, res) => {
     res.status(200).json({ message: 'Verification documents submitted successfully.' })
   } catch (err) {
     console.error(`${traceId} file upload error:`, err)
-    logSecurityEvent({
+    await logSecurityEvent({
       traceId,
       userEmail: email,
       action: 'submit_verification_docs',
@@ -244,10 +201,6 @@ export const submitVerificationDocs = async (req, res) => {
     res.status(400).json({ error: `Upload failed: ${err.message}` })
   }
 }
-
-
-
-
 
 export const getUserFromToken = async (token) => {
   if (!token) return null;

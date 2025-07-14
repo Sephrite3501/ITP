@@ -30,14 +30,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { logSecurityClient } from '@/utils/logUtils'
 
 const idFile = ref(null)
 const paymentFile = ref(null)
 const uploading = ref(false)
 const uploadStatus = ref('')
 const router = useRouter()
+const refId = `UPLOAD-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
+onMounted(() => {
+  document.title = 'Upload Verification | IRC'
+})
 
 function handleFileChange(event, type) {
   const file = event.target.files[0]
@@ -50,9 +56,8 @@ async function uploadDocuments() {
   uploading.value = true
 
   const formData = new FormData()
-  formData.append('paymentProof', idFile.value)
-  formData.append('identityProof', paymentFile.value)
-
+  formData.append('identityProof', idFile.value)
+  formData.append('paymentProof', paymentFile.value)
 
   try {
     const res = await fetch('http://localhost:3001/api/user/upload-documents', {
@@ -61,16 +66,32 @@ async function uploadDocuments() {
       credentials: 'include'
     })
     const result = await res.json()
+
     if (!res.ok) throw new Error(result.error || 'Upload failed')
+
     uploadStatus.value = result.message || 'Documents uploaded!'
+    await logSecurityClient({
+      category: 'user',
+      action: 'documents_uploaded',
+      details: `Verification documents uploaded (refId: ${refId})`,
+      severity: 'medium'
+    })
+
     router.push('/userprofile')
   } catch (err) {
-    uploadStatus.value = 'Failed to upload. Please try again.'
+    uploadStatus.value = `Failed to upload. Please try again. (Ref: ${refId})`
+    await logSecurityClient({
+      category: 'error',
+      action: 'upload_documents_failed',
+      details: `Document upload failed (refId: ${refId})`,
+      severity: 'high'
+    })
   } finally {
     uploading.value = false
   }
 }
 </script>
+
 
 <style scoped>
 .upload-container {

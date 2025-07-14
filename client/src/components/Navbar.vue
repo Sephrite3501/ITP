@@ -6,7 +6,7 @@
       <ul class="nav-links">
         <template v-if="auth.user && !auth.isAdmin">
           <li><router-link to="/userprofile">Profile</router-link></li>
-          <li v-if="auth.user.role === 'inactive'">
+          <li v-if="auth.user.account_status === 'inactive'">
             <router-link to="/upload-verification">Upload Verification</router-link>
           </li>
           <li><router-link to="/events">Events</router-link></li>
@@ -40,6 +40,7 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
+import { logSecurityClient } from '@/utils/logUtils.js'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -53,12 +54,14 @@ onMounted(async () => {
     if (res.ok && data?.user) {
       auth.setUser(data.user)
     }
-  } catch (err) {
-    console.warn('[Navbar] User not logged in')
+  } catch {
+    // Silent fail (user not logged in)
   }
 })
 
 const logout = async () => {
+  const traceId = `LOGOUT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+
   try {
     await fetch('http://localhost:3001/api/auth/logout', {
       method: 'POST',
@@ -66,11 +69,19 @@ const logout = async () => {
     })
     auth.clearUser()
     router.push('/login')
-  } catch (err) {
-    console.error('[Navbar] Logout failed:', err)
+  } catch {
+    logSecurityClient({
+      traceId,
+      category: 'auth',
+      action: 'logout_client_fail',
+      status: 'fail',
+      severity: 'low',
+      message: 'Logout failed on client side'
+    })
   }
 }
 </script>
+
 
 <style scoped>
 .navbar {

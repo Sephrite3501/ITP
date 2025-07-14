@@ -64,8 +64,22 @@
 
 
 <script setup>
-// You can add logic here if you plan to fetch dynamic content in the future
+import { onMounted } from 'vue'
+import { logSecurityClient } from '@/utils/logUtils'
+
+onMounted(() => {
+  document.title = 'IRC Membership | IRC'
+
+  // Optional: track view of public membership info
+  logSecurityClient({
+    category: 'public',
+    action: 'view_membership',
+    details: 'User visited membership info page',
+    severity: 'low'
+  })
+})
 </script>
+
 
 <style scoped>
 .membership-container {

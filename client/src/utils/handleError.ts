@@ -1,4 +1,4 @@
-interface AxiosErrorResponse {
+export interface AxiosErrorResponse {
   response?: {
     data?: {
       error?: string;
@@ -7,22 +7,25 @@ interface AxiosErrorResponse {
   message?: string;
 }
 
-export function getFriendlyError(error: AxiosErrorResponse, fallbackCode = 'GENERIC'): string {
-  const traceId = generateTraceId(fallbackCode);
+
+export function getFriendlyError(
+  error: AxiosErrorResponse,
+  fallbackMsg: string,
+  refId: string
+): string {
   const serverMsg = error?.response?.data?.error;
 
-  if (serverMsg && typeof serverMsg === 'string' && !serverMsg.toLowerCase().includes('internal')) {
-    return `${serverMsg} (Ref: ${traceId})`;
+  if (
+    serverMsg &&
+    typeof serverMsg === 'string' &&
+    !serverMsg.toLowerCase().includes('internal')
+  ) {
+    return `${serverMsg} (Ref: ${refId})`;
   }
 
   if (error?.message === 'Network Error') {
-    return `Cannot reach the server. Please try again. (Ref: ${traceId})`;
+    return `Cannot reach the server. Please try again. (Ref: ${refId})`;
   }
 
-  return `Something went wrong. Please contact support. (Ref: ${traceId})`;
-}
-
-function generateTraceId(prefix: string): string {
-  const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
-  return `${prefix}-${rand}`;
+  return `${fallbackMsg} (Ref: ${refId})`;
 }

@@ -1,32 +1,34 @@
 // server/routes/user.js
 import express from 'express'
-import { getUserProfile, updateProfile, deleteAccount, submitVerificationDocs, getUserRegisteredEvents, unregisterUserFromEvent } from '../controllers/userController.js'
-import { upload, validateAndSaveFiles } from '../utils/uploadMiddleware.js';
-import { requireAuth } from '../middleware/requireAuth.js';
-import { requireAdmin } from '../middleware/requireAdmin.js';
+import {
+  getUserProfile,
+  updateProfile,
+  deleteAccount,
+  submitVerificationDocs
+} from '../controllers/userController.js'
+
+import { upload } from '../utils/uploadMiddleware.js'
+import { requireAuth } from '../middleware/requireAuth.js'
 
 const router = express.Router()
 
-router.use(requireAuth);
+// 🔐 All routes require authentication
+router.use(requireAuth)
 
+// 🧑 User endpoints
 router.get('/user-profile', getUserProfile)
 router.post('/update-profile', updateProfile)
 router.post('/delete-account', deleteAccount)
-router.get('/registered-events', getUserRegisteredEvents)
-router.delete('/unregister/:eventId', unregisterUserFromEvent)
 
+// 🧾 Document submission (uploads)
 router.post(
   '/upload-documents',
-  requireAuth,
   upload.fields([
     { name: 'paymentProof', maxCount: 1 },
     { name: 'identityProof', maxCount: 1 }
   ]),
   submitVerificationDocs
-);
+)
 
-router.get('/admin-only', requireAuth, requireAdmin, (req, res) => {
-  res.json({ message: `Hello Admin ${req.user.email}` });
-});
 
 export default router

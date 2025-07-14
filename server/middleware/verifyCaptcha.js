@@ -2,14 +2,16 @@
 import axios from 'axios';
 
 export const verifyCaptcha = async (req, res, next) => {
+  const traceId = `CAPTCHA-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+  const token = req.body.recaptchaToken;
+
+  if (!token) {
+    return res.status(400).json({
+      message: `CAPTCHA token missing. (Ref: ${traceId})`
+    });
+  }
+
   try {
-    const token = req.body.recaptchaToken;
-    console.log('[verifyCaptcha] Token:', token);
-
-    if (!token) {
-      return res.status(400).json({ message: 'CAPTCHA token missing.' });
-    }
-
     const response = await axios.post(
       `https://www.google.com/recaptcha/api/siteverify`,
       new URLSearchParams({
@@ -18,15 +20,17 @@ export const verifyCaptcha = async (req, res, next) => {
       })
     );
 
-    console.log('[verifyCaptcha] Response:', response.data);
-
     if (!response.data.success) {
-      return res.status(400).json({ message: 'CAPTCHA verification failed.' });
+      return res.status(400).json({
+        message: `CAPTCHA verification failed. (Ref: ${traceId})`
+      });
     }
 
     next();
   } catch (err) {
-    console.error('[verifyCaptcha ERROR]', err);
-    return res.status(500).json({ message: 'Internal CAPTCHA verification error.' });
+    console.error(`[verifyCaptcha] ${traceId} Verification error:`, err.message);
+    return res.status(500).json({
+      message: `Internal CAPTCHA verification error. (Ref: ${traceId})`
+    });
   }
 };

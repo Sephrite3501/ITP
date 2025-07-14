@@ -35,6 +35,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { logSecurityClient } from '@/utils/logUtils'
 
 const queue = ref([])
 const message = ref('')
@@ -45,21 +46,39 @@ const fetchQueue = async () => {
 }
 
 const approveUser = async (submissionId, userId, userName) => {
+  const refId = `VERIFY-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
   try {
     await axios.post('http://localhost:3001/api/admin/approve-user', {
       submissionId,
       userId
-    }, { withCredentials: true });
+    }, { withCredentials: true })
 
-    message.value = `${userName} approved.`;
-    await fetchQueue();
+    message.value = `${userName} approved. (Ref: ${refId})`
+    await logSecurityClient({
+      category: 'admin',
+      action: 'approve_user',
+      targetUserId: userId,
+      refId,
+      details: `User ${userName} approved by admin (submissionId=${submissionId})`,
+      severity: 'high'
+    })
+
+    await fetchQueue()
   } catch (err) {
-    console.error('Approval failed:', err);
-    message.value = err.response?.data?.error || 'Approval failed.';
+    message.value = `Approval failed. (Ref: ${refId})`
+    await logSecurityClient({
+      category: 'error',
+      action: 'approve_user_failed',
+      targetUserId: userId,
+      refId,
+      details: `Failed to approve user ${userName} - ${err?.message}`,
+      severity: 'critical'
+    })
   }
 }
 
-
-
-onMounted(fetchQueue)
+onMounted(() => {
+  document.title = 'Admin | Verification'
+  fetchQueue()
+})
 </script>

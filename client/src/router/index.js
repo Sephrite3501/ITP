@@ -1,7 +1,24 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ContentManagement from '../views/admin/ContentManagement.vue'
 
 const routes = [
+  // 🔒 Error Routes
+  {
+    path: '/403',
+    component: () => import('../views/error/Error403.vue')
+  },
+  {
+    path: '/500',
+    component: () => import('../views/error/Error500.vue')
+  },
+  {
+    path: '/csrf-error',
+    component: () => import('../views/error/CsrfError.vue')
+  },
+  {
+    path: '/:catchAll(.*)',
+    component: () => import('../views/error/Error404.vue')
+  },
+
   // 🔓 Public / Guest-only Routes
   {
     path: '/',
@@ -60,27 +77,24 @@ const routes = [
   },
   {
     path: '/events',
-    component: () => import('../views/public/Events.vue'),
-    //meta: { guestOnly: true }
+    component: () => import('../views/public/Events.vue')
   },
-
   {
     path: '/events/:slug',
     name: 'EventDetail',
     component: () => import('../views/public/EventDetails.vue')
   },
-
   {
-      path: '/committees/snapshots',
-      name: 'snapshot',
-      component: () => import('../views/public/CommitteeHistory.vue')
-    },
-
-    {
+    path: '/committees/snapshots',
+    name: 'snapshot',
+    component: () => import('../views/public/CommitteeHistory.vue')
+  },
+  {
     path: '/home',
     component: () => import('../views/public/HomeView.vue'),
     meta: { guestOnly: true }
-    },
+  },
+
   // 🔐 Authenticated User Routes
   {
     path: '/userprofile',
@@ -110,20 +124,11 @@ const routes = [
     meta: { requiresAuth: true }
   },
 
-  // To change once got admin
-  // {
-  //   path: '/admin/CommitteePanel',
-  //   component: () => import('@/views/admin/AdminCommitteePanel.vue'),
-  //   meta: {  requiresAuth: true }
-  // },
-
-
   {
-     path: '/CommitteePanel',
-     component: () => import('@/views/admin/AdminCommitteePanel.vue'),
-     meta: {  guestOnly: true }
-   },
-
+    path: '/CommitteePanel',
+    component: () => import('@/views/admin/AdminCommitteePanel.vue'),
+    meta: { guestOnly: true }
+  }
 ]
 
 export const router = createRouter({
@@ -145,17 +150,17 @@ router.beforeEach(async (to, from, next) => {
     const isLoggedIn = res.ok && data?.user
 
     if (guestOnly && isLoggedIn) {
-      return next('/userprofile') // logged-in users can't access guest pages
+      return next('/userprofile')
     }
 
     if (requiresAuth && !isLoggedIn) {
-      return next('/login') // block auth-only pages if not logged in
-    }
-
-    if (to.path.startsWith('/admin') && (!isLoggedIn || data.user.user_role !== 'admin')) {
       return next('/login')
     }
 
+    if (to.path.startsWith('/admin')) {
+      if (!isLoggedIn) return next('/login')
+      if (data.user.user_role !== 'admin') return next('/403')
+    }
 
     next()
   } catch (err) {

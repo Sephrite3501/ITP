@@ -50,8 +50,9 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { logSecurityClient } from '@/utils/logUtils'
 
 const router = useRouter()
 const form = reactive({ email: '', password: '' })
@@ -60,6 +61,10 @@ const errors = reactive({})
 const error = ref('')
 const loading = ref(false)
 const showPassword = ref(false)
+
+onMounted(() => {
+  document.title = 'Login | IRC'
+})
 
 const inputClass = (field) =>
   touched[field] && errors[field] ? 'error-input' : touched[field] ? 'valid-input' : ''
@@ -98,6 +103,8 @@ const onSubmit = async () => {
   if (!validate()) return
 
   loading.value = true
+  const refId = `LOGIN-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+
   try {
     const recaptchaToken = await executeRecaptcha()
 
@@ -109,18 +116,40 @@ const onSubmit = async () => {
 
     const result = await res.json()
     if (!res.ok) {
-      error.value = result.error || 'Login failed'
+      error.value = result.error
+        ? `${result.error} (Ref: ${refId})`
+        : `Login failed. (Ref: ${refId})`
+
+      await logSecurityClient({
+        category: 'auth',
+        action: 'login_failed',
+        details: `Email: ${form.email}, refId: ${refId}`,
+        severity: 'medium'
+      })
     } else {
+      await logSecurityClient({
+        category: 'auth',
+        action: 'login_success',
+        details: `User: ${form.email}, refId: ${refId}`,
+        severity: 'low'
+      })
       router.push({ path: '/verify-otp', query: { email: form.email } })
     }
   } catch (err) {
-    console.error('Login error:', err)
-    error.value = 'Unexpected error. Please try again.'
+    error.value = `Unexpected error. Please try again. (Ref: ${refId})`
+
+    await logSecurityClient({
+      category: 'error',
+      action: 'login_error',
+      details: `Unhandled exception for ${form.email} (refId: ${refId}) - ${err?.message}`,
+      severity: 'high'
+    })
   } finally {
     loading.value = false
   }
 }
 </script>
+
 
 <style scoped>
 .login-container {

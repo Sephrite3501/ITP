@@ -1,18 +1,26 @@
-import express from 'express';
-import { lockUser, unlockUser, softDeleteUser, getAllUsers, getVerificationQueue, approveSubmission } from '../controllers/adminController.js';
-import { requireAuth } from '../middleware/requireAuth.js';
-import { requireAdmin } from '../middleware/requireAdmin.js';
+// server/routes/admin.js
+import express from 'express'
+import {
+  lockUser,
+  unlockUser,
+  softDeleteUser,
+  getAllUsers,
+  getVerificationQueue,
+  approveSubmission
+} from '../controllers/adminController.js'
+import { requireAuth } from '../middleware/requireAuth.js'
+import { requireAdmin } from '../middleware/requireAdmin.js'
 
-const router = express.Router();
+const router = express.Router()
 
-router.use(requireAuth, requireAdmin);
+// 🔐 All admin routes require authenticated admin
+router.use(requireAuth, requireAdmin)
 
-router.post('/lock-user', requireAdmin, lockUser);
-router.post('/unlock-user', requireAdmin, unlockUser);
-router.post('/delete-user', requireAdmin, softDeleteUser);
-router.get('/users', requireAdmin, getAllUsers);
-router.get('/verification-queue', requireAdmin, getVerificationQueue);
-router.post('/approve-user', requireAdmin, approveSubmission);
+router.post('/lock-user', lockUser)
+router.post('/unlock-user', unlockUser)
+router.post('/delete-user', softDeleteUser)
+router.get('/users', getAllUsers)
+router.get('/verification-queue', getVerificationQueue)
+router.post('/approve-user', approveSubmission)
 
-
-export default router;
+export default router
