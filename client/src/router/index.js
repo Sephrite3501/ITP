@@ -5,7 +5,7 @@ const routes = [
   // 🔓 Public / Guest-only Routes
   {
     path: '/',
-    component: () => import('../views/public/Membership.vue')
+    component: () => import('../views/public/HomeView.vue')
   },
   {
     path: '/membership',
@@ -107,6 +107,11 @@ const routes = [
   {
     path: '/admin/content-management',
     component: () => import('@/views/admin/ContentManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/event-management',
+    component: () => import('@/views/admin/EventManagement.vue'),
     meta: { requiresAuth: true }
   },
 

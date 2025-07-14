@@ -57,7 +57,7 @@ function viewEvent(slug) {
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/events')
+    const res = await fetch('/api/events/getAll')
     const events = await res.json()
 
     console.log("Fetched events:", events) // Debugging output

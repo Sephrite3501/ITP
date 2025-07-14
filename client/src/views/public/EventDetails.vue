@@ -6,10 +6,14 @@
       <p class="event-location">Location: {{ event.location }}</p>
       <p class="event-type">Type: {{ event.event_type }}</p>
       <p class="event-description">{{ event.description }}</p>
-      <p class="event-poc">POC: {{ event.poc ? "Yes" : "No" }}</p>
-        <button class="register-button" @click="registerForEvent">
-         Register
-        </button>
+      <button
+        class="register-button"
+        @click="registerForEvent"
+        :disabled="!event.poc"
+        :style="{ backgroundColor: !event.poc ? '#ccc' : '#28a745', cursor: !event.poc ? 'not-allowed' : 'pointer' }"
+      >
+        Register
+      </button>
     </div>
 
     <div v-else class="loading">
