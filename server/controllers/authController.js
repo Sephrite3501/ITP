@@ -196,7 +196,7 @@ export const loginRequest = async (req, res) => {
   const userAgent = req.headers['user-agent'];
 
   try {
-    const result = await db.query(`SELECT * FROM users WHERE email=$1 AND account_status='inactive'`, [email]);
+    const result = await db.query(`SELECT * FROM users WHERE email=$1 AND account_status IN ('inactive', 'active')`, [email]);
     const user = result.rows[0];
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       logSecurityEvent({ traceId, userEmail: email, action: 'login_request', status: 'invalid', ip, userAgent, message: 'Invalid credentials' });
@@ -238,9 +238,20 @@ export const loginVerify = async (req, res) => {
       return res.status(401).json({ error: 'Invalid or expired OTP' });
     }
 
-    const userRes = await db.query(`SELECT id, name, email, user_role FROM users WHERE email=$1`, [email]);
+    const userRes = await db.query(
+      `SELECT id, name, email, user_role FROM users 
+      WHERE email=$1 AND account_status IN ('inactive', 'active')`,
+      [email]
+    );
+
+    if (!userRes.rows.length) {
+      logSecurityEvent({ traceId, userEmail: email, action: 'login_verify', status: 'fail', ip, userAgent, message: 'Account status invalid' });
+      return res.status(403).json({ error: 'Your account is not permitted to log in.' });
+    }
     const user = userRes.rows[0];
 
+    await db.query(`DELETE FROM session_tokens WHERE user_id = $1`, [user.id]); // 🧹 cleanup old sessions
+    
     await db.query(`DELETE FROM login_otp WHERE email=$1`, [email]); // cleanup OTP
 
     // 🔐 Create and store session token

@@ -34,7 +34,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>Email</label>
-              <input type="email" :value="user.email" disabled />
+              <p>{{ user.email }}</p>
             </div>
             <div class="form-group">
               <label>Contact Number</label>
@@ -342,6 +342,11 @@ input {
 
 input::placeholder {
   color: #6b7280; /* visible placeholder */
+}
+
+p {
+  color: #111827; /* visible text */
+  background-color: white;
 }
 
 .profile-form input {
