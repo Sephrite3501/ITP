@@ -8,6 +8,9 @@
 </template>
 
 <script setup>
+import { useSessionWatcher } from './composables/useSessionWatcher'
+useSessionWatcher()
+
 import Navbar from './components/Navbar.vue';
 </script>
 

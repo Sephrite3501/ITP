@@ -6,7 +6,8 @@ import {
   loginVerify,
   requestReset,
   validateResetToken,
-  resetPassword
+  resetPassword,
+  refreshToken
 } from '../controllers/authController.js'
 
 import {
@@ -50,6 +51,9 @@ router.post('/reset-password', validateNewPassword, resetPassword);
 router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
+
+// Refresh token endpoint
+router.post('/refresh', requireAuth, refreshToken)
 
 // Logout: clear cookie + delete token from DB
 router.post('/logout', async (req, res) => {

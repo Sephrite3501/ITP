@@ -495,3 +495,51 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+// Refresh session token
+export const refreshToken = async (req, res) => {
+  const traceId = `REFRESH-${Math.random().toString(36).substr(2, 5).toUpperCase()}`
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+  const userAgent = req.headers['user-agent']
+
+  try {
+    const session = req.sessionToken
+    if (!session) {
+      return res.status(401).json({ error: 'Invalid or expired session' })
+    }
+
+    // Reissue a new token
+    const newToken = generateAuthToken()
+
+    // Delete old token and store new one
+    await db.query(`DELETE FROM session_tokens WHERE token = $1`, [session.token])
+    await saveSessionToken({
+      token: newToken,
+      userId: session.user_id,
+      role: session.role,
+      ip,
+      userAgent
+    })
+
+    // Send updated cookie
+    res.cookie('auth_token', newToken, {
+      httpOnly: true,
+      secure: false, // set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    })
+
+    logSecurityEvent({
+      userId: session.user_id,
+      action: 'session_refresh',
+      details: 'Session refreshed via /auth/refresh',
+      refId: traceId,
+      req
+    })
+
+    res.json({ success: true, message: 'Session refreshed' })
+
+  } catch (err) {
+    console.error(`[REFRESH ERROR] ${traceId}`, err)
+    res.status(500).json({ error: `Failed to refresh session (Ref: ${traceId})` })
+  }
+}
