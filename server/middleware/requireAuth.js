@@ -13,10 +13,12 @@ export const requireAuth = async (req, res, next) => {
   try {
     const user = await findUserByToken(token);
 
+    console.log('[requireAuth] Found user:', user);
+
     if (!user) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
-
+    
     req.user = user; // attach user info to request
     next();
   } catch (err) {

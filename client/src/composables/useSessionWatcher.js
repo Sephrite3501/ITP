@@ -1,7 +1,11 @@
+// src/composables/useSessionWatcher.js
+
 import { onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '../stores/authStore.js'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { watch } from 'vue'
+
 
 export function useSessionWatcher() {
   const auth = useAuthStore()
@@ -12,68 +16,99 @@ export function useSessionWatcher() {
   let idleTimeout = null
   let refreshInterval = null
 
-//   const INACTIVITY_LIMIT = 30 * 60 * 1000 // 30 mins
-//   const REFRESH_INTERVAL = 25 * 60 * 1000 // 25 mins
-
   const INACTIVITY_LIMIT = 1 * 60 * 1000 // 1 min for testing
-  const REFRESH_INTERVAL = 30 * 1000     // 30s for testing
+  const REFRESH_INTERVAL = 10 * 1000     // 10s for testing
+  const activityEvents = ['mousemove', 'keydown', 'scroll', 'click']
 
   const updateActivity = () => {
     lastActivity = Date.now()
   }
 
-    const logout = async () => {
+  const logout = async (reason = 'inactivity') => {
     try {
-        await fetch('http://localhost:3001/api/auth/logout', {
+      await fetch('http://localhost:3001/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
-        })
+      })
     } catch (err) {
-        console.warn('[Inactivity Logout] Failed to clear server session')
+      console.warn('[SessionWatcher] Failed to clear server session')
     }
 
     auth.clearUser()
-    toast.warning('You have been logged out due to inactivity.', {
-        timeout: false, // 🛑 stays until manually dismissed
+
+    if (reason === 'inactivity') {
+      toast.warning('You have been logged out due to inactivity.', {
+        timeout: false,
         closeOnClick: true,
         draggable: true
-    })
-    router.push('/login')
+      })
+    } else if (reason === 'conflict') {
+      toast.error('You have been logged out because your account was logged in elsewhere.', {
+        timeout: false,
+        closeOnClick: true,
+        draggable: true
+      })
     }
 
-  const startWatcher = () => {
-    ['mousemove', 'keydown', 'scroll', 'click'].forEach(event => {
-      window.addEventListener(event, updateActivity)
-    })
-
-    idleTimeout = setInterval(() => {
-      if (Date.now() - lastActivity > INACTIVITY_LIMIT) {
-        logout()
-      }
-    }, 60 * 1000)
-
-    refreshInterval = setInterval(async () => {
-      if (Date.now() - lastActivity < INACTIVITY_LIMIT) {
-        try {
-          await fetch('http://localhost:3001/api/auth/refresh', {
-            method: 'POST',
-            credentials: 'include'
-          })
-        } catch (err) {
-          logout()
-        }
-      }
-    }, REFRESH_INTERVAL)
+    router.push('/login')
   }
 
+const startWatcher = () => {
+  activityEvents.forEach(event => {
+    window.addEventListener(event, updateActivity)
+  })
+
+  idleTimeout = setInterval(() => {
+    const diff = Date.now() - lastActivity
+    if (diff > INACTIVITY_LIMIT) {
+      logout('inactivity')
+    }
+  }, 60 * 1000)
+
+refreshInterval = setInterval(async () => {
+  const diff = Date.now() - lastActivity
+
+  if (diff < INACTIVITY_LIMIT && auth.user?.email) {
+    console.log('[SessionWatcher] Checking session activity:', auth.user)
+
+    try {
+      const res = await fetch('http://localhost:3001/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (!res.ok) throw new Error('Token refresh failed')
+
+    } catch (err) {
+      console.warn('[SessionWatcher] Refresh failed:', err)
+      logout('conflict') // 🧨 trigger logout
+    }
+  }
+}, REFRESH_INTERVAL)
+
+}
+
+
   const stopWatcher = () => {
-    ['mousemove', 'keydown', 'scroll', 'click'].forEach(event => {
+    activityEvents.forEach(event => {
       window.removeEventListener(event, updateActivity)
     })
     clearInterval(idleTimeout)
     clearInterval(refreshInterval)
   }
 
-  onMounted(startWatcher)
+
+    onMounted(() => {
+    watch(
+        () => auth.user?.email,
+        (email) => {
+        if (email) {
+            console.log('[SessionWatcher] Starting session watcher for:', email)
+            startWatcher()
+        }
+        },
+        { immediate: true }
+    )
+    })
   onUnmounted(stopWatcher)
 }

@@ -502,44 +502,40 @@ export const refreshToken = async (req, res) => {
   const userAgent = req.headers['user-agent']
 
   try {
-    const session = req.sessionToken
+    const session = req.user
     if (!session) {
       return res.status(401).json({ error: 'Invalid or expired session' })
     }
 
-    // Reissue a new token
-    const newToken = generateAuthToken()
+    // Extend the existing token’s expiration
+    const newExpiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-    // Delete old token and store new one
-    await db.query(`DELETE FROM session_tokens WHERE token = $1`, [session.token])
-    await saveSessionToken({
-      token: newToken,
-      userId: session.user_id,
-      role: session.role,
-      ip,
-      userAgent
-    })
+    await db.query(`
+      UPDATE session_tokens
+      SET expires_at = $1
+      WHERE token = $2
+    `, [newExpiry, session.token])
 
-    // Send updated cookie
-    res.cookie('auth_token', newToken, {
+    res.cookie('auth_token', session.token, {
       httpOnly: true,
-      secure: false, // set to true in production with HTTPS
+      secure: false, // set to true in production
       sameSite: 'lax',
-      maxAge: 60 * 60 * 1000 // 1 hour
+      maxAge: 60 * 60 * 1000
     })
 
     logSecurityEvent({
       userId: session.user_id,
       action: 'session_refresh',
-      details: 'Session refreshed via /auth/refresh',
+      details: 'Session expiry extended via /auth/refresh',
       refId: traceId,
       req
     })
 
-    res.json({ success: true, message: 'Session refreshed' })
+    res.json({ success: true, message: 'Session expiry extended' })
 
   } catch (err) {
     console.error(`[REFRESH ERROR] ${traceId}`, err)
     res.status(500).json({ error: `Failed to refresh session (Ref: ${traceId})` })
   }
 }
+
