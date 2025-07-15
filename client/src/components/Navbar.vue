@@ -10,32 +10,51 @@
             <router-link to="/upload-verification">Upload Verification</router-link>
           </li>
           <li><router-link to="/events">Events</router-link></li>
+          <li class="dropdown">
+            <span class="dropdown-toggle">Committees</span>
+            <ul class="dropdown-menu">
+              <li><router-link to="/committees">Current Committees</router-link></li>
+              <li><router-link to="/committees/snapshots">Committees History</router-link></li>
+            </ul>
+          </li>
+          <li class="dropdown">
+            <span class="dropdown-toggle">IRC-SET Conference</span>
+            <ul class="dropdown-menu">
+              <li><a href="https://ircset.org/main/conference-2023/" target="_blank" rel="noopener noreferrer">IRC-SET 2023</a></li>
+              <li><a href="https://ircset.org/main/conference-2022/" target="_blank" rel="noopener noreferrer">IRC-SET 2022</a></li>
+              <li><a href="https://ircset.org/main/conference-2021/" target="_blank" rel="noopener noreferrer">IRC-SET 2021</a></li>
+              <li><a href="https://ircset.org/main/conference-2020/" target="_blank" rel="noopener noreferrer">IRC-SET 2020</a></li>
+              <li><a href="https://ircset.org/main/conference-2019/" target="_blank" rel="noopener noreferrer">IRC-SET 2019</a></li>
+              <li><a href="https://ircset.org/main/conference-2018/" target="_blank" rel="noopener noreferrer">IRC-SET 2018</a></li>
+              <li><a href="https://ircset.org/main/conference-2017/" target="_blank" rel="noopener noreferrer">IRC-SET 2017</a></li>
+              <li><a href="https://ircset.org/main/conference-2016/" target="_blank" rel="noopener noreferrer">IRC-SET 2016</a></li>
+              <li><a href="https://ircset.org/main/conference-2015/" target="_blank" rel="noopener noreferrer">IRC-SET 2015</a></li>
+            </ul>
+          </li>  
           <li class="welcome-msg">Hi, {{ auth.user.name }}</li>
           <li><button @click="logout" class="logout-btn">Logout</button></li>
         </template>
 
         <template v-else-if="auth.isAdmin">
-          <!--<li><router-link to="/userprofile">Profile</router-link></li>-->
-            <li class="dropdown">
+          <li class="dropdown">
             <span class="dropdown-toggle">Management</span>
             <ul class="dropdown-menu">
               <li><router-link to="/admin/users">User Management</router-link></li>
               <li><router-link to="/admin/verify-user">User Verification</router-link></li>
               <li><router-link to="/admin/content-management">Content Management</router-link></li>
               <li><router-link to="/admin/event-management">Event Management</router-link></li>
-              <li><router-link to="/admin/CommitteePanel">Committee Management</router-link></li>
-              <li class="dropdown">
-                <span class="dropdown-toggle">Committees</span>
-                <ul class="dropdown-menu">
-                  <li><router-link to="/committees">Current Committees</router-link></li>
-                  <li><router-link to="/committees/snapshots">Committees History</router-link></li>
-                </ul>
-              </li>
+              <li><router-link to="/admin/CommitteePanel">Committee Management</router-link></li>  
             </ul>
-            </li>
+          </li>
+          <li class="dropdown">
+            <span class="dropdown-toggle">Committees</span>
+            <ul class="dropdown-menu">
+              <li><router-link to="/committees">Current Committees</router-link></li>
+              <li><router-link to="/committees/snapshots">Committees History</router-link></li>
+            </ul>
+          </li>
           <li><button @click="logout" class="logout-btn">Logout</button></li>
         </template>
-
         <template v-else>
           <li><router-link to="/home">Home</router-link></li>
           <li class="dropdown">
@@ -122,10 +141,12 @@ const logout = async () => {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 1rem 2rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  background-color: #fff;
+  width: 100%;
+  margin: 0;
+  padding: 0.75rem 2rem;
+  box-sizing: border-box; /* ✅ ensures padding doesn't add extra width */
+  border-bottom: 1px solid #ddd;
 }
 
 .navbar-inner {

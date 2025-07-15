@@ -20,4 +20,9 @@ body {
   margin: 0;
   font-family: 'Inter', sans-serif;
 }
+@media (min-width: 1024px) {
+    #app {
+        display: block;
+    }
+}
 </style>

@@ -249,7 +249,7 @@ export const getUserRegisteredEvents = async (req, res) => {
     console.error('Error fetching registered events:', err)
     return res.status(500).json({ error: 'Failed to fetch registered events' })
   }
-}
+};
 
 export const unregisterUserFromEvent = async (req, res) => {
   const token = req.cookies?.auth_token
@@ -275,4 +275,4 @@ export const unregisterUserFromEvent = async (req, res) => {
     console.error('Error unregistering from event:', err)
     return res.status(500).json({ error: 'Failed to unregister' })
   }
-}
+};

@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS session_logs (
   id SERIAL PRIMARY KEY,
   user_id INTEGER,
   session_id TEXT,
-  action TEXT NOT NULL,          -- e.g. session_created, session_invalidated
+  action TEXT NOT NULL,          \
   ip_address TEXT,
   user_agent TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()

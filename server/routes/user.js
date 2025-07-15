@@ -4,11 +4,14 @@ import {
   getUserProfile,
   updateProfile,
   deleteAccount,
-  submitVerificationDocs
+  submitVerificationDocs,
+  getUserRegisteredEvents,
+  unregisterUserFromEvent
 } from '../controllers/userController.js'
 
 import { upload } from '../utils/uploadMiddleware.js'
 import { requireAuth } from '../middleware/requireAuth.js'
+import { get } from 'http'
 
 const router = express.Router()
 
@@ -19,6 +22,8 @@ router.use(requireAuth)
 router.get('/user-profile', getUserProfile)
 router.post('/update-profile', updateProfile)
 router.post('/delete-account', deleteAccount)
+router.get('/registered-events', getUserRegisteredEvents)
+router.delete('/unregister/:eventId', unregisterUserFromEvent)
 
 // 🧾 Document submission (uploads)
 router.post(
