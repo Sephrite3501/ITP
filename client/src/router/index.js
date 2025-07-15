@@ -73,7 +73,6 @@ const routes = [
     path: '/committees',
     name: 'committees',
     component: () => import('../views/public/Committee.vue'),
-    meta: { guestOnly: true }
   },
   {
     path: '/events',

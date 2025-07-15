@@ -45,7 +45,7 @@ const props = defineProps({
 })
 
 const isHighlighted = computed(
-  () => props.role.toLowerCase() === 'President'
+  () => props.role.toLowerCase() === 'president'
 )
 
 const initials = computed(() => {
