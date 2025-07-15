@@ -49,7 +49,7 @@ function sanitizeMember(member = {}) {
     name: sanitizeHtml(member.name  || '', { allowedTags: [], allowedAttributes: {} }),
     role: sanitizeHtml(member.role  || '', { allowedTags: [], allowedAttributes: {} }),
     email: sanitizeHtml(member.email || '', { allowedTags: [], allowedAttributes: {} }),
-    imagePath: u.profile_image_path || null
+    imagePath: cleanImagePath(member.profile_image_path)
   }
 }
 
@@ -146,7 +146,7 @@ export const getSnapshotById = async (req, res) => {
           name: slot.member.name,
           role: slot.member.role,
           email: slot.member.email,
-          profile_image_path: slot.member.profile_image_path
+          profile_image_path: cleanImagePath(slot.member.profile_image_path)
         })
       })),
       member: member.map(m =>
@@ -155,7 +155,7 @@ export const getSnapshotById = async (req, res) => {
           name: m.name,
           role: m.role,
           email: m.email,
-          profile_image_path: m.profile_image_path
+          profile_image_path: cleanImagePath(m.profile_image_path)
         })
       )
     })

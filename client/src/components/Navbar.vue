@@ -23,6 +23,9 @@
               <li><router-link to="/admin/verify-user">User Verification</router-link></li>
               <li><router-link to="/admin/content-management">Content Management</router-link></li>
               <li><router-link to="/admin/event-management">Event Management</router-link></li>
+              <li><router-link to="/admin/CommitteePanel">Committee Management</router-link></li>
+              <li><router-link to="/committees">Committees</router-link></li>
+              <li><router-link to="/committees/snapshots">Committees History</router-link></li>
             </ul>
             </li>
           <li><button @click="logout" class="logout-btn">Logout</button></li>
