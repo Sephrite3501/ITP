@@ -1,28 +1,47 @@
 <template>
-  <section class="otp-container">
-    <div class="otp-box">
-      <h1 class="otp-title">Enter Your OTP</h1>
+  <section class="flex items-center justify-center px-2">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 sm:p-10">
+      <h1 class="text-2xl font-extrabold text-center text-gray-800 mb-4">Enter Your OTP</h1>
 
-      <p class="otp-subtext">
-        We’ve sent a 6-digit code to your email: <strong>{{ email }}</strong>
+      <p class="text-base text-center text-gray-600 mb-6">
+        We’ve sent a 6-digit code to your email:<br>
+        <strong>{{ email }}</strong>
       </p>
 
-      <form @submit.prevent="onSubmit" class="otp-form">
-        <div class="form-group">
-          <label for="otp">OTP Code</label>
+      <form @submit.prevent="onSubmit" class="space-y-6">
+        <div>
+          <label for="otp" class="block text-sm font-medium text-gray-700 mb-1">OTP Code</label>
           <input
             id="otp"
-            v-model="otp"
+            v-model.trim="otp"
             type="text"
             maxlength="6"
+            autocomplete="one-time-code"
+            pattern="\d*"
             placeholder="Enter code"
             required
+            @input="validateOtp"
+            @blur="markTouched('otp')"
+            :class="[
+              'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-green-500 transition',
+              otpError ? 'border-red-500' 
+                : touched.otp && otp.length === 6 && !otpError 
+                  ? 'border-green-500' 
+                  : 'border-gray-300'
+            ]"
           />
+          <p v-if="otpError" class="text-xs text-red-600 mt-1">{{ otpError }}</p>
         </div>
 
-        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+        <div v-if="errorMessage" class="bg-red-100 text-red-700 p-2 rounded text-sm mb-2">
+          {{ errorMessage }}
+        </div>
 
-        <button type="submit" :disabled="loading">
+        <button
+          type="submit"
+          class="w-full py-2 px-4 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-400"
+          :disabled="loading"
+        >
           {{ loading ? 'Verifying...' : 'Verify Code' }}
         </button>
       </form>
@@ -30,9 +49,8 @@
   </section>
 </template>
 
-
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/authStore'
 import { logSecurityClient } from '@/utils/logUtils'
@@ -47,6 +65,20 @@ const otp = ref('')
 const errorMessage = ref('')
 const loading = ref(false)
 const refId = `OTP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+const otpError = ref('')
+const touched = reactive({ otp: false })
+
+const validateOtp = () => {
+  otpError.value = ''
+  if (!otp.value || otp.value.length !== 6 || !/^\d{6}$/.test(otp.value)) {
+    otpError.value = 'Please enter the full 6-digit numeric code.'
+  }
+}
+
+const markTouched = (field) => {
+  touched[field] = true
+  validateOtp()
+}
 
 onMounted(() => {
   document.title = 'Verify OTP | IRC'
@@ -66,7 +98,12 @@ onMounted(() => {
 const onSubmit = async () => {
   errorMessage.value = ''
   loading.value = true
-
+  touched.otp = true
+  validateOtp()
+  if (otpError.value) {
+    loading.value = false
+    return
+  }
   try {
     const res = await fetch('http://localhost:3001/api/auth/verify-otp', {
       method: 'POST',
@@ -119,98 +156,3 @@ const onSubmit = async () => {
   }
 }
 </script>
-
-
-
-<style scoped>
-.otp-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 1rem;
-  min-height: 70vh;
-  background: #f9fafb;
-}
-
-.otp-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 10px;
-  max-width: 420px;
-  width: 100%;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.otp-title {
-  font-size: 1.75rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 0.5rem;
-  color: #111827;
-}
-
-.otp-subtext {
-  font-size: 0.95rem;
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #374151;
-}
-
-.otp-form .form-group {
-  margin-bottom: 1.2rem;
-}
-
-.otp-form label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.3rem;
-}
-
-.otp-form input {
-  width: 100%;
-  padding: 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-
-button {
-  width: 100%;
-  padding: 0.75rem;
-  background: #16a34a;
-  color: white;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: #ccc;
-}
-
-.error-message {
-  background: #fee2e2;
-  color: #b91c1c;
-  padding: 0.5rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-label {
-  color: #374151; /* Tailwind's gray-700 */
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-  display: block;
-}
-
-input::placeholder {
-  color: #9ca3af; /* Tailwind's gray-400 for better visibility */
-  opacity: 1; /* Make sure it's not faded */
-}
-
-input {
-  color: #111827; /* Ensure typed text is visible */
-}
-
-</style>

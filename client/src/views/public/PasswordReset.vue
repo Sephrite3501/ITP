@@ -1,58 +1,88 @@
 <template>
-  <section class="reset-container">
-    <div class="reset-box">
-      <h1 class="reset-title">Reset Your Password</h1>
+  <section class="flex items-center justify-center px-2">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8 sm:p-10">
+      <h1 class="text-2xl font-extrabold text-center text-gray-800 mb-6">Reset Your Password</h1>
 
-      <form @submit.prevent="onSubmit" class="reset-form">
-        <div class="form-group">
-          <label for="new-password">New Password</label>
-          <div class="password-wrapper">
+      <form @submit.prevent="onSubmit" class="space-y-6">
+        <!-- New Password -->
+        <div>
+          <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+          <div class="relative flex items-center">
             <input
               id="new-password"
               :type="showPassword ? 'text' : 'password'"
-              v-model="form.password"
-              @blur="touched.password = true"
+              v-model.trim="form.password"
               placeholder="Enter new password"
+              @input="() => { touched.password = true; validatePassword() }"
+              @blur="() => { touched.password = true; validatePassword() }"
+              class="w-full border rounded-lg py-2 px-3 pr-16 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              :class="[
+                touched.password && passwordError ? 'border-red-500'
+                  : touched.password && form.password && !passwordError ? 'border-green-500'
+                  : 'border-gray-300'
+              ]"
               required
             />
-            <button type="button" @click="showPassword = !showPassword">
+            <button
+              type="button"
+              @click="showPassword = !showPassword"
+              class="absolute right-3 text-blue-600 font-medium text-sm"
+            >
               {{ showPassword ? 'Hide' : 'Show' }}
             </button>
           </div>
-          <p class="password-strength" :class="passwordStrength.toLowerCase()" v-if="form.password">
-            Strength: <strong>{{ passwordStrength }}</strong>
-          </p>
+          <p v-if="passwordError" class="text-xs text-red-600 mt-1">{{ passwordError }}</p>
         </div>
 
-        <div class="form-group">
-          <label for="confirm-password">Confirm Password</label>
-          <div class="password-wrapper">
+        <!-- Confirm Password -->
+        <div>
+          <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+          <div class="relative flex items-center">
             <input
               id="confirm-password"
               :type="showConfirm ? 'text' : 'password'"
-              v-model="form.confirmPassword"
-              @blur="touched.confirmPassword = true"
+              v-model.trim="form.confirmPassword"
               placeholder="Re-enter password"
+              @blur="touched.confirmPassword = true"
+              class="w-full border rounded-lg py-2 px-3 pr-16 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              :class="[
+                confirmMismatch ? 'border-red-500' :
+                touched.confirmPassword && form.confirmPassword && !confirmMismatch ? 'border-green-500' :
+                'border-gray-300'
+              ]"
               required
             />
-            <button type="button" @click="showConfirm = !showConfirm">
+            <button
+              type="button"
+              @click="showConfirm = !showConfirm"
+              class="absolute right-3 text-blue-600 font-medium text-sm"
+            >
               {{ showConfirm ? 'Hide' : 'Show' }}
             </button>
           </div>
-          <p class="field-error" v-if="confirmMismatch">Passwords do not match</p>
+          <p v-if="confirmMismatch" class="text-xs text-red-600 mt-1">Passwords do not match</p>
         </div>
 
-        <div v-if="error" class="error-message">{{ error }}</div>
-        <div v-if="success" class="success-message">{{ success }}</div>
+        <!-- Errors & Success -->
+        <div v-if="error" class="bg-red-100 text-red-700 p-2 rounded text-sm mb-1">
+          {{ error }}
+        </div>
+        <div v-if="success" class="bg-green-50 text-green-700 p-2 rounded text-sm mb-1">
+          {{ success }}
+        </div>
 
-        <button type="submit" :disabled="loading">
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="w-full py-2 px-4 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-400"
+          :disabled="loading"
+        >
           {{ loading ? 'Resetting...' : 'Reset Password' }}
         </button>
       </form>
     </div>
   </section>
 </template>
-
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
@@ -70,66 +100,23 @@ const form = reactive({
 const error = ref('')
 const success = ref('')
 const token = ref('')
-const tokenValid = ref(false)
-const checkingToken = ref(true)
 const loading = ref(false)
 const showPassword = ref(false)
 const showConfirm = ref(false)
+const passwordError = ref('')
 const touched = reactive({ password: false, confirmPassword: false })
 
 const refId = `RESET-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
 
-onMounted(async () => {
-  document.title = 'Reset Password | IRC'
-
-  token.value = route.query.token || ''
-  if (!token.value) {
-    tokenValid.value = false
-    checkingToken.value = false
-    await logSecurityClient({
-      category: 'auth',
-      action: 'reset_invalid_token',
-      details: `Missing token (refId: ${refId})`,
-      severity: 'high'
-    })
-    return
+const validatePassword = () => {
+  const pwd = form.password
+  passwordError.value = ''
+  if (!pwd) {
+    passwordError.value = 'Password is required'
+  } else if (pwd.length < 8 || !/[A-Z]/.test(pwd)) {
+    passwordError.value = 'Password must be at least 8 characters with one uppercase letter'
   }
-
-  try {
-    const res = await fetch('http://localhost:3001/api/auth/validate-reset-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: token.value })
-    })
-    const result = await res.json()
-    tokenValid.value = result.valid === true
-
-    if (!tokenValid.value) {
-      await logSecurityClient({
-        category: 'auth',
-        action: 'reset_token_rejected',
-        details: `Invalid or expired token (refId: ${refId})`,
-        severity: 'medium'
-      })
-    }
-  } catch (err) {
-    tokenValid.value = false
-    await logSecurityClient({
-      category: 'error',
-      action: 'reset_token_check_error',
-      details: `Token check failed (refId: ${refId})`,
-      severity: 'high'
-    })
-  } finally {
-    checkingToken.value = false
-  }
-})
-
-const passwordStrength = computed(() => {
-  if (form.password.length < 8) return 'Weak'
-  if (/[A-Z]/.test(form.password) && /[0-9]/.test(form.password) && /[!@#$%^&*]/.test(form.password)) return 'Strong'
-  return 'Medium'
-})
+}
 
 const confirmMismatch = computed(() =>
   touched.confirmPassword && form.confirmPassword && form.confirmPassword !== form.password
@@ -138,11 +125,11 @@ const confirmMismatch = computed(() =>
 const onSubmit = async () => {
   error.value = ''
   success.value = ''
-
   touched.password = true
   touched.confirmPassword = true
+  validatePassword()
 
-  if (!form.password || confirmMismatch.value) {
+  if (passwordError.value || confirmMismatch.value) {
     error.value = `Please ensure passwords match and meet requirements. (Ref: ${refId})`
     return
   }
@@ -192,129 +179,52 @@ const onSubmit = async () => {
     loading.value = false
   }
 }
+
+const tokenValid = ref(false)
+const checkingToken = ref(true)
+
+onMounted(async () => {
+  document.title = 'Reset Password | IRC'
+  token.value = route.query.token || ''
+  if (!token.value) {
+    tokenValid.value = false
+    checkingToken.value = false
+    await logSecurityClient({
+      category: 'auth',
+      action: 'reset_invalid_token',
+      details: `Missing token (refId: ${refId})`,
+      severity: 'high'
+    })
+    return
+  }
+
+  try {
+    const res = await fetch('http://localhost:3001/api/auth/validate-reset-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token.value })
+    })
+    const result = await res.json()
+    tokenValid.value = result.valid === true
+
+    if (!tokenValid.value) {
+      await logSecurityClient({
+        category: 'auth',
+        action: 'reset_token_rejected',
+        details: `Invalid or expired token (refId: ${refId})`,
+        severity: 'medium'
+      })
+    }
+  } catch (err) {
+    tokenValid.value = false
+    await logSecurityClient({
+      category: 'error',
+      action: 'reset_token_check_error',
+      details: `Token check failed (refId: ${refId})`,
+      severity: 'high'
+    })
+  } finally {
+    checkingToken.value = false
+  }
+})
 </script>
-
-
-<style scoped>
-.reset-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 1rem;
-  min-height: 70vh;
-  background: #f3f4f6;
-}
-
-.reset-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-
-.reset-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #111827;
-}
-
-.reset-form .form-group {
-  margin-bottom: 1.2rem;
-}
-
-.reset-form label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.3rem;
-  color: #374151;
-}
-
-.password-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.password-wrapper input {
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  color: #111827;
-  background-color: white;
-}
-
-.password-wrapper button {
-  position: absolute;
-  right: 10px;
-  background: none;
-  border: none;
-  color: #2563eb;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.reset-form input::placeholder {
-  color: #6b7280;
-}
-
-button[type="submit"] {
-  width: 100%;
-  padding: 0.75rem;
-  background: #16a34a;
-  color: white;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 0.5rem;
-}
-
-button:disabled {
-  background: #ccc;
-}
-
-.error-message {
-  background: #fee2e2;
-  color: #b91c1c;
-  padding: 0.5rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-.success-message {
-  background: #dcfce7;
-  color: #15803d;
-  padding: 0.5rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-.password-strength {
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-}
-
-.password-strength.weak {
-  color: red;
-}
-
-.password-strength.medium {
-  color: orange;
-}
-
-.password-strength.strong {
-  color: green;
-}
-
-.field-error {
-  font-size: 0.85rem;
-  color: #dc2626;
-  margin-top: 0.25rem;
-}
-</style>

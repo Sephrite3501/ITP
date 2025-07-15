@@ -1,21 +1,20 @@
 <template>
-  <section class="flex flex-col items-center px-4 py-12 bg-gray-50">
+  <section class="flex flex-col items-center px-4 py-12 bg-gray-50 min-h-screen">
     <!-- Page Title -->
     <div class="flex justify-between items-center mb-4">
-      <h1 class="text-4xl font-bold text-gray-900">Committees</h1>
-    </div>
+     <h1 class="text-4xl font-bold">Committees</h1>
+   </div>
     <span class="block w-24 h-1 bg-yellow-400 rounded-lg mb-10"></span>
 
     <!-- Loading / Error Handling -->
     <div v-if="isLoading" class="text-gray-600 text-lg py-10 animate-pulse">Loading…</div>
     <div v-else-if="error" class="text-red-500 py-10 text-center text-lg font-medium">{{ error }}</div>
 
-    <!-- Loaded Content -->
     <div v-else class="w-full max-w-7xl">
       <!-- Leadership Row -->
-      <div class="mb-14">
+      <div class="mb-12">
         <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">Leadership</h2>
-        <div class="leadership-cols">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 place-items-center gap-10 m-5">
           <LeadershipCard
             v-for="slot in leadership"
             :key="slot.role"
@@ -25,10 +24,12 @@
         </div>
       </div>
 
-      <!-- Committee Members Grid -->
+      <!-- Chair Grid -->
       <div>
         <h2 class="text-2xl font-extrabold text-gray-700 mb-6 text-center">Committee Members</h2>
-        <div class="chair-cols">
+        <div
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"
+        >
           <ChairCard
             v-for="m in member"
             :key="m.id"
@@ -40,14 +41,17 @@
   </section>
 </template>
 
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
-import LeadershipCard from '../../components/LeadershipCard.vue'
-import ChairCard from '../../components/ChairCard.vue'
 
-// Axios global config
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
+import LeadershipCard from '../../components/LeadershipCard.vue'
+import ChairCard      from '../../components/ChairCard.vue'
+
+// ─── axios global hardening ─────────────────────────────────────────
+// (same as before: baseURL, withCredentials, CSRF token, cache-control)
+axios.defaults.baseURL         = import.meta.env.VITE_API_BASE_URL
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['Cache-Control'] = 'no-store'
 axios.interceptors.request.use(cfg => {
@@ -56,19 +60,26 @@ axios.interceptors.request.use(cfg => {
   return cfg
 })
 
+// ─── Reactive state & data fetch ────────────────────────────────────
 const raw       = ref({ leadership: [], member: [] })
 const isLoading = ref(true)
 const error     = ref(null)
 
+// Make sanitizeMember safe against missing fields
 function sanitizeMember(member = {}) {
   return {
     ...member,
-    name:  typeof member.name  === 'string' ? member.name.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '',
-    email: typeof member.email === 'string' ? member.email.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''
+    name:  typeof member.name  === 'string'
+            ? member.name.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            : '',
+    email: typeof member.email === 'string'
+            ? member.email.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            : ''
   }
 }
 
-const fetchCommittees = async () => {
+async function fetchCommittees() {
+  isLoading.value = true
   try {
     const { data } = await axios.get('/api/committees')
 
@@ -92,46 +103,12 @@ const fetchCommittees = async () => {
 }
 
 onMounted(fetchCommittees)
+
 const leadership = computed(() => raw.value.leadership)
-const member = computed(() => raw.value.member)
+const member      = computed(() => raw.value.member)
 </script>
 
 <style scoped>
-.leadership-cols,
-.chair-cols {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-@media (min-width: 640px) {
-  .leadership-cols,
-  .chair-cols {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .leadership-cols > * {
-    flex: 1 1 calc(50% - 0.75rem); /* 2 items per row on sm+ */
-  }
-  .chair-cols > * {
-    flex: 1 1 calc(33.333% - 0.75rem); /* 3 items per row on sm+ */
-  }
-}
-
-@media (min-width: 768px) {
-  .leadership-cols > * {
-    flex: 1 1 calc(33.333% - 0.75rem); /* 3 items per row on md+ */
-  }
-  .chair-cols > * {
-    flex: 1 1 calc(25% - 0.75rem); /* 4 items per row on md+ */
-  }
-}
-
-@media (min-width: 1024px) {
-  .chair-cols > * {
-    flex: 1 1 calc(16.666% - 0.75rem); /* 6 items per row on lg+ */
-  }
-}
 
 img {
   display: block;

@@ -1,53 +1,81 @@
 <template>
-  <section class="login-container">
-    <div class="login-box">
-      <h1 class="login-title">Login</h1>
-
-      <form @submit.prevent="onSubmit" class="login-form">
-        <div class="form-group">
-          <label for="email">Email</label>
+  <section class="flex items-center justify-center px-2">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 sm:p-10">
+      <h1 class="text-2xl font-extrabold text-center text-gray-800 mb-8">Login</h1>
+      <form @submit.prevent="onSubmit" class="space-y-6">
+        <!-- Email Field -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input
             id="email"
             type="email"
             v-model.trim="form.email"
-            @blur="touched.email = true"
-            :class="inputClass('email')"
             autocomplete="email"
+            placeholder="e.g. you@example.com"
+            @blur="markTouched('email')"
+            :class="[
+              'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition',
+              errors.email ? 'border-red-500'
+              : touched.email && form.email && !errors.email ? 'border-green-500'
+              : 'border-gray-300'
+            ]"
           />
-          <p v-if="touched.email && errors.email" class="field-error">{{ errors.email }}</p>
+          <p v-if="errors.email" class="text-xs text-red-600 mt-1">{{ errors.email }}</p>
         </div>
-
-        <div class="form-group">
-          <label for="password">Password</label>
-          <div class="password-wrapper">
+        <!-- Password Field -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <div class="relative flex items-center">
             <input
               :type="showPassword ? 'text' : 'password'"
               id="password"
               v-model.trim="form.password"
-              @blur="touched.password = true"
-              :class="inputClass('password')"
               autocomplete="current-password"
+              placeholder="Enter your password"
+              @blur="markTouched('password')"
+              :class="[
+                'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-10',
+                errors.password ? 'border-red-500'
+                : touched.password && form.password && !errors.password ? 'border-green-500'
+                : 'border-gray-300'
+              ]"
             />
-            <span class="toggle-password" @click="showPassword = !showPassword">
-              {{ showPassword ? '🙈' : '👁️' }}
+            <span
+              class="absolute right-3 inset-y-0 flex items-center h-full text-blue-500 cursor-pointer text-base select-none"
+              @click="showPassword = !showPassword"
+            >
+              {{ showPassword ? 'Hide' : 'Show' }}
             </span>
           </div>
-          <p v-if="touched.password && errors.password" class="field-error">{{ errors.password }}</p>
+          <p v-if="errors.password" class="text-xs text-red-600 mt-1">{{ errors.password }}</p>
         </div>
-
-        <div id="recaptcha" class="recaptcha-box"></div>
-
-        <p v-if="error" class="error-message">{{ error }}</p>
-
-        <button type="submit" :disabled="loading">
-          {{ loading ? 'Logging in...' : 'Login' }}
-        </button>
-
-        <router-link to="/resetpasswordrequest" class="forgot-link">Forgot password?</router-link>
+        <!-- reCAPTCHA and Error -->
+        <div>
+          <div id="recaptcha" class="mt-2 mb-4"></div>
+          <p v-if="error" class="bg-red-100 text-red-700 p-2 rounded text-sm mb-1">{{ error }}</p>
+        </div>
+        <!-- Submit Button -->
+        <div>
+          <button
+            type="submit"
+            class="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+            :disabled="loading"
+          >
+            {{ loading ? 'Logging in...' : 'Login' }}
+          </button>
+        </div>
+        <!-- Forgot Password Link -->
+        <router-link
+          to="/resetpasswordrequest"
+          class="block text-center text-blue-600 font-medium mt-4 underline hover:text-blue-800 transition"
+        >
+          Forgot password?
+        </router-link>
       </form>
     </div>
   </section>
 </template>
+
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
@@ -66,22 +94,48 @@ onMounted(() => {
   document.title = 'Login | IRC'
 })
 
-const inputClass = (field) =>
-  touched[field] && errors[field] ? 'error-input' : touched[field] ? 'valid-input' : ''
+const markTouched = (field) => {
+  touched[field] = true;      
+  validateField(field);
+}
+
+const tempEmailDomains = [
+  "mailinator.com",
+  "10minutemail.com",
+  "guerrillamail.com",
+  "yopmail.com",
+  "throwawaymail.com"
+]
+
+const isTempEmail = (email) =>
+  tempEmailDomains.some(domain => email.toLowerCase().endsWith('@' + domain))
+
+const validateField = (field) => {
+  const value = form[field]
+  delete errors[field]
+
+  switch (field) {
+    case 'email':
+      if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        errors.email = 'Valid email is required'
+      } else if (isTempEmail(value)) {
+        errors.email = 'Temporary emails are not allowed'
+      }
+      break
+    case 'password':
+      if (!value || value.length < 8 || !/[A-Z]/.test(value)) {
+        errors.password = 'Password must be at least 8 characters with one uppercase letter'
+      }
+      break
+    }
+}
 
 const validate = () => {
-  errors.email = ''
-  errors.password = ''
+  validateField('email');
+  validateField('password');
+  return !errors.email && !errors.password;
+};
 
-  if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    errors.email = 'Valid email is required'
-  }
-  if (!form.password) {
-    errors.password = 'Password is required'
-  }
-
-  return Object.values(errors).every((v) => !v)
-}
 
 const executeRecaptcha = () =>
   new Promise((resolve, reject) => {
@@ -149,120 +203,3 @@ const onSubmit = async () => {
   }
 }
 </script>
-
-
-<style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 1rem;
-  background: #f9fafb;
-  min-height: 80vh;
-}
-
-.login-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  max-width: 460px;
-  width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.login-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #111827;
-}
-
-.login-form .form-group {
-  margin-bottom: 1.2rem;
-}
-
-.login-form label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.3rem;
-  color: #374151;
-}
-
-.login-form input {
-  width: 100%;
-  padding: 0.6rem;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  color: #111827;
-}
-
-.valid-input {
-  border-color: #16a34a;
-}
-
-.error-input {
-  border-color: #dc2626;
-}
-
-.password-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.password-wrapper input {
-  flex: 1;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 0.75rem;
-  cursor: pointer;
-  font-size: 1rem;
-  user-select: none;
-}
-
-button {
-  width: 100%;
-  padding: 0.8rem;
-  background: #2563eb;
-  color: white;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: #ccc;
-}
-
-.forgot-link {
-  display: block;
-  text-align: center;
-  margin-top: 1rem;
-  color: #2563eb;
-  font-weight: 500;
-  text-decoration: underline;
-}
-
-.error-message {
-  background: #fee2e2;
-  color: #b91c1c;
-  padding: 0.5rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-.field-error {
-  font-size: 0.9rem;
-  color: #dc2626;
-  margin-top: 0.25rem;
-}
-
-.recaptcha-box {
-  margin: 1rem 0;
-}
-</style>

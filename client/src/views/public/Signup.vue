@@ -1,54 +1,149 @@
 <template>
-  <section class="signup-container">
-    <div class="signup-box">
-      <h1 class="signup-title">Create Your IRC Account</h1>
-
-      <form @submit.prevent="onSubmit" class="signup-form">
-        <div
-          v-for="field in fields"
-          :key="field.id"
-          class="form-group"
-        >
-          <label :for="field.id">{{ field.label }}</label>
-          <div v-if="field.type !== 'select'" class="input-wrapper">
-            <div class="input-eye-wrapper" v-if="field.type === 'password'">
-              <input
-                :type="showPassword[field.model] ? 'text' : 'password'"
-                :id="field.id"
-                v-model.trim="form[field.model]"
-                :placeholder="field.placeholder"
-                :autocomplete="field.autocomplete"
-                :class="[errors[field.model] ? 'error-input' : '', isValid(field.model) ? 'valid-input' : '']"
-                @blur="markTouched(field.model)"
-              />
-              <span class="toggle-password" @click="togglePassword(field.model)">
-                {{ showPassword[field.model] ? '🙈' : '👁️' }}
-              </span>
-            </div>
+  <section class="flex items-center justify-center px-2">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 sm:p-10">
+      <h1 class="text-2xl font-extrabold text-center text-gray-800 mb-8">
+        Create Your IRC Account
+      </h1>
+      <form @submit.prevent="onSubmit" class="space-y-6">
+        <!-- Name Field -->
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <input
+            id="name"
+            v-model.trim="form.name"
+            type="text"
+            autocomplete="name"
+            :class="[
+              'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition',
+              errors.name ? 'border-red-500' : form.name ? 'border-green-500' : 'border-gray-300'
+            ]"
+            placeholder="Your full name"
+            @blur="markTouched('name')"
+          />
+          <p v-if="errors.name" class="text-xs text-red-600 mt-1">{{ errors.name }}</p>
+        </div>
+        <!-- Email Field -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input
+            id="email"
+            v-model.trim="form.email"
+            type="email"
+            autocomplete="email"
+            :class="[
+              'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition',
+              errors.email ? 'border-red-500' : form.email ? 'border-green-500' : 'border-gray-300'
+            ]"
+            placeholder="e.g. you@example.com"
+            @blur="markTouched('email')"
+          />
+          <p v-if="errors.email" class="text-xs text-red-600 mt-1">{{ errors.email }}</p>
+        </div>
+        <!-- Password Field -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <div class="relative flex items-center">
             <input
-              v-else
-              :id="field.id"
-              :type="field.type"
-              v-model.trim="form[field.model]"
-              :placeholder="field.placeholder"
-              :autocomplete="field.autocomplete"
-              :class="[errors[field.model] ? 'error-input' : '', isValid(field.model) ? 'valid-input' : '']"
-              @blur="markTouched(field.model)"
+              :type="showPassword.password ? 'text' : 'password'"
+              id="password"
+              v-model.trim="form.password"
+              autocomplete="new-password"
+              :class="[
+                'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-10',
+                errors.password ? 'border-red-500' : form.password ? 'border-green-500' : 'border-gray-300'
+              ]"
+              placeholder="Minimum 8 characters"
+              @blur="markTouched('password')"
             />
-            <p
-              v-if="field.model === 'password' && form.password"
-              class="password-strength"
-              :class="passwordStrength.toLowerCase()"
+            <span
+              class="absolute right-3 inset-y-0 flex items-center h-full text-blue-500 cursor-pointer text-base select-none"
+              @click="togglePassword('password')"
             >
-              Strength: <strong>{{ passwordStrength }}</strong>
-            </p>
+              {{ showPassword.password ? 'Hide' : 'Show' }}
+            </span>
           </div>
-
+          <p v-if="errors.password" class="text-xs text-red-600 mt-1">{{ errors.password }}</p>
+          <p
+            v-if="form.password"
+            class="text-xs mt-1"
+            :class="{
+              'text-red-600': passwordStrength === 'Weak',
+              'text-yellow-500': passwordStrength === 'Medium',
+              'text-green-600': passwordStrength === 'Strong'
+            }"
+          >
+            Strength: <strong>{{ passwordStrength }}</strong>
+          </p>
+        </div>
+        <!-- Confirm Password Field -->
+        <div>
+          <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+          <div class="relative flex items-center">
+            <input
+              :type="showPassword.confirmPassword ? 'text' : 'password'"
+              id="confirmPassword"
+              v-model.trim="form.confirmPassword"
+              autocomplete="new-password"
+              :class="[
+                'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition pr-10',
+                errors.confirmPassword ? 'border-red-500' : form.confirmPassword ? 'border-green-500' : 'border-gray-300'
+              ]"
+              placeholder="Re-enter password"
+              @blur="markTouched('confirmPassword')"
+            />
+            <span
+              class="absolute right-3 inset-y-0 flex items-center h-full text-blue-500 cursor-pointer text-base select-none"
+              @click="togglePassword('confirmPassword')"
+            >
+              {{ showPassword.confirmPassword ? 'Hide' : 'Show' }}
+            </span>
+          </div>
+          <p v-if="errors.confirmPassword" class="text-xs text-red-600 mt-1">{{ errors.confirmPassword }}</p>
+        </div>
+        <!-- Contact Number -->
+        <div>
+          <label for="contactNumber" class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+          <input
+            id="contactNumber"
+            v-model.trim="form.contactNumber"
+            type="text"
+            autocomplete="tel"
+            :class="[
+              'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition',
+              errors.contactNumber ? 'border-red-500' : form.contactNumber ? 'border-green-500' : 'border-gray-300'
+            ]"
+            placeholder="Contact number"
+            @blur="markTouched('contactNumber')"
+          />
+          <p v-if="errors.contactNumber" class="text-xs text-red-600 mt-1">{{ errors.contactNumber }}</p>
+        </div>
+        <!-- Address -->
+        <div>
+          <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+          <input
+            id="address"
+            v-model.trim="form.address"
+            type="text"
+            autocomplete="street-address"
+            :class="[
+              'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition',
+              errors.address ? 'border-red-500' : form.address ? 'border-green-500' : 'border-gray-300'
+            ]"
+            placeholder="Address"
+            @blur="markTouched('address')"
+          />
+          <p v-if="errors.address" class="text-xs text-red-600 mt-1">{{ errors.address }}</p>
+        </div>
+        <!-- Member Type -->
+        <div>
+          <label for="memberType" class="block text-sm font-medium text-gray-700 mb-1">Member Type</label>
           <select
-            v-else
-            :id="field.id"
+            id="memberType"
             v-model="form.memberType"
-            :class="[errors.memberType ? 'error-input' : '', isValid('memberType') ? 'valid-input' : '']"
+            :class="[
+              'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition',
+              errors.memberType ? 'border-red-500' : form.memberType ? 'border-green-500' : 'border-gray-300'
+            ]"
             @blur="markTouched('memberType')"
           >
             <option disabled value="">Select...</option>
@@ -56,31 +151,28 @@
             <option value="Ordinary">Ordinary</option>
             <option value="Corporate">Corporate</option>
           </select>
-
-          <p class="field-error" :id="field.id + '-error'" v-if="errors[field.model]">
-            {{ errors[field.model] }}
-          </p>
+          <p v-if="errors.memberType" class="text-xs text-red-600 mt-1">{{ errors.memberType }}</p>
         </div>
-
-        <div class="form-footer full-width">
-          <label class="inline-label">
-            <input type="checkbox" v-model="form.agreed" @blur="markTouched('agreed')" />
-            <span>I agree to the <a href="#" target="_blank">Terms & Conditions</a></span>
-          </label>
-          <p class="field-error" v-if="errors.agreed">{{ errors.agreed }}</p>
+        <!-- reCAPTCHA -->
+        <div>
+          <div id="recaptcha" class="mt-4"></div>
+          <p v-if="errors.recaptcha" class="text-xs text-red-600 mt-2">Please complete the CAPTCHA</p>
         </div>
-
-        <p class="field-error full-width" v-if="errors.recaptcha">Please complete the CAPTCHA</p>
-
-        <div id="recaptcha" class="recaptcha-box full-width"></div>
-
-        <button type="submit" class="submit-button full-width" :disabled="loading">
-          {{ loading ? 'Registering...' : 'Sign Up' }}
-        </button>
+        <!-- Submit Button -->
+        <div>
+          <button
+            type="submit"
+            class="w-full py-2 px-4 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-400"
+            :disabled="loading"
+          >
+            {{ loading ? 'Registering...' : 'Sign Up' }}
+          </button>
+        </div>
       </form>
     </div>
   </section>
 </template>
+
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
@@ -98,7 +190,7 @@ const form = reactive({
   contactNumber: '',
   address: '',
   memberType: '',
-  agreed: false,
+  agreed: true,  // Checkbox for terms agreement (change to false if user must agree)
   recaptchaToken: ''
 })
 
@@ -271,146 +363,3 @@ const onSubmit = async () => {
 }
 </script>
 
-
-<style scoped>
-.signup-container {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 1rem;
-  background: #f9fafb;
-  min-height: 80vh;
-}
-
-.signup-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 700px;
-  margin: 0 auto;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-}
-
-.signup-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #111827;
-}
-
-.signup-form {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-@media (min-width: 768px) {
-  .signup-form {
-    grid-template-columns: 1fr 1fr;
-  }
-  .form-group.full-width,
-  .form-footer.full-width,
-  .recaptcha-box.full-width,
-  .submit-button.full-width {
-    grid-column: 1 / -1;
-  }
-}
-
-.form-group {
-  margin-bottom: 1.2rem;
-}
-
-.signup-form label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.3rem;
-  color: #374151;
-}
-
-.signup-form input,
-.signup-form select {
-  color: #111827; /* dark visible text */
-  background-color: white;
-    width: 100%;
-  padding: 0.6rem;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-}
-
-.signup-form input::placeholder,
-.signup-form select option[disabled] {
-  color: #424344; /* subtle gray placeholder */
-}
-
-.input-wrapper {
-  position: relative;
-}
-
-.input-eye-wrapper {
-  position: relative;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #2563eb;
-  cursor: pointer;
-  font-size: 0.9rem;
-  user-select: none;
-}
-
-.password-strength {
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-}
-.password-strength.weak { color: red; }
-.password-strength.medium { color: orange; }
-.password-strength.strong { color: green; }
-
-.valid-input { border-color: #16a34a; }
-.error-input { border-color: #dc2626; }
-.field-error {
-  font-size: 0.85rem;
-  color: #dc2626;
-  margin-top: 0.25rem;
-}
-
-.inline-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.form-footer {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  text-align: center;
-  margin-top: 1rem;
-}
-
-.submit-button {
-  padding: 0.75rem;
-  background: #16a34a;
-  color: white;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  max-width: 250px;
-  margin: 0 auto;
-}
-
-button:disabled {
-  background: #ccc;
-}
-
-.recaptcha-box {
-  margin: 1rem 0;
-}
-</style>

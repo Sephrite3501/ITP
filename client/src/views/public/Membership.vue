@@ -1,15 +1,17 @@
 <template>
-  <section class="membership-container">
-    <div class="membership-box">
-      <h1 class="membership-title">IRC Membership Types</h1>
-
-      <div class="membership-cards">
-        <div class="membership-card">
-          <h2>Junior Membership</h2>
-          <div class="membership-price">$30</div>
-          <p>For 2 Years</p>
-          <p>Eligibility: high-school or college students without first degree.</p>
-          <ul>
+  <section class="w-full flex flex-col items-center">
+    <div class="w-full max-w-6xl py-12 text-center">
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8">IRC Membership Types</h1>
+      <div class="mt-10 membership-cols mb-8">
+        <!-- Junior Membership Card -->
+        <div class="bg-white rounded-xl shadow p-6 text-left flex flex-col">
+          <h2 class="text-lg font-semibold text-blue-700 mb-1">Junior Membership</h2>
+          <div class="text-[1.6rem] font-bold text-green-600 mb-2">$30</div>
+          <p class="text-sm text-gray-600 mb-1">For 2 Years</p>
+          <p class="text-sm text-gray-600 mb-2">
+            Eligibility: high-school or college students without first degree.
+          </p>
+          <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
             <li>Entitled to use IRC membership benefits.</li>
             <li>Can publish paper in IRC-SET conferences at free of charge.</li>
             <li>Not entitled to vote at General Meetings.</li>
@@ -17,12 +19,15 @@
           </ul>
         </div>
 
-        <div class="membership-card">
-          <h2>Ordinary Membership</h2>
-          <div class="membership-price">$60</div>
-          <p>For 2 Years</p>
-          <p>Eligibility: holders of first degree and above.</p>
-          <ul>
+        <!-- Ordinary Membership Card -->
+        <div class="bg-white rounded-xl shadow p-6 text-left flex flex-col">
+          <h2 class="text-lg font-semibold text-blue-700 mb-1">Ordinary Membership</h2>
+          <div class="text-[1.6rem] font-bold text-green-600 mb-2">$60</div>
+          <p class="text-sm text-gray-600 mb-1">For 2 Years</p>
+          <p class="text-sm text-gray-600 mb-2">
+            Eligibility: holders of first degree and above.
+          </p>
+          <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
             <li>Entitled to use IRC membership benefits.</li>
             <li>Can publish paper in IRC-SET conferences at free of charge.</li>
             <li>Entitled to vote at General Meetings.</li>
@@ -30,12 +35,15 @@
           </ul>
         </div>
 
-        <div class="membership-card">
-          <h2>Corporate Membership</h2>
-          <div class="membership-price">$1000</div>
-          <p>For 2 Years</p>
-          <p>Eligibility: companies, institutes, and agencies.</p>
-          <ul>
+        <!-- Corporate Membership Card -->
+        <div class="bg-white rounded-xl shadow p-6 text-left flex flex-col">
+          <h2 class="text-lg font-semibold text-blue-700 mb-1">Corporate Membership</h2>
+          <div class="text-[1.6rem] font-bold text-green-600 mb-2">$1000</div>
+          <p class="text-sm text-gray-600 mb-1">For 2 Years</p>
+          <p class="text-sm text-gray-600 mb-2">
+            Eligibility: companies, institutes, and agencies.
+          </p>
+          <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
             <li>Entitled to use IRC membership benefits.</li>
             <li>Can publish paper in the IRC-SET conference at free of charge.</li>
             <li>Not entitled to vote at General Meetings.</li>
@@ -44,24 +52,35 @@
         </div>
       </div>
 
-      <router-link to="/signup" class="join-button">Join Now</router-link>
+      <router-link
+        to="/signup"
+        class="inline-block px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition"
+      >
+        Join Now
+      </router-link>
     </div>
 
-    <div class="starhub-card">
-      <h3>📱 Starhub Member Benefits</h3>
-      <p>
-        IRC members can enjoy <strong>20% to 30% corporate rate discount</strong> with Starhub,
-        depending on mobile package signed up. Kindly produce IRC membership card during registration.
-      </p>
-      <p>
-        <a href="http://www.starhub.com" target="_blank" rel="noopener noreferrer">
-          Visit: www.starhub.com
-        </a>
-      </p>
+    <div class="mt-10 w-full max-w-6xl">
+      <div class="bg-white rounded-xl shadow p-6 text-left text-gray-800">
+        <h3 class="text-lg font-semibold text-green-600 mb-2">📱 Starhub Member Benefits</h3>
+        <p class="text-sm mb-2">
+          IRC members can enjoy <strong>20% to 30% corporate rate discount</strong> with Starhub,
+          depending on mobile package signed up. Kindly produce IRC membership card during registration.
+        </p>
+        <p class="text-sm">
+          <a
+            href="http://www.starhub.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-blue-600 underline hover:text-blue-800"
+          >
+            Visit: www.starhub.com
+          </a>
+        </p>
+      </div>
     </div>
   </section>
 </template>
-
 
 <script setup>
 import { onMounted } from 'vue'
@@ -80,122 +99,21 @@ onMounted(() => {
 })
 </script>
 
-
 <style scoped>
-.membership-container {
+.membership-cols {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 3rem 1rem;
-  background: #f9fafb;
-  min-height: 80vh;
-}
-
-.membership-box {
-  max-width: 900px;
+  gap: 1.5rem; /* About Tailwind's gap-6 */
   width: 100%;
-  text-align: center;
-}
-
-.membership-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  color: #111827;
-}
-
-.membership-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
 }
 
 @media (min-width: 768px) {
-  .membership-cards {
+  .membership-cols {
     flex-direction: row;
+    gap: 1.5rem;
   }
-}
-
-.membership-card {
-  flex: 1;
-  background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  text-align: left;
-}
-
-.membership-card h2 {
-  font-size: 1.25rem;
-  color: #1e40af;
-  margin-bottom: 0.3rem;
-}
-
-.membership-price {
-  font-size: 1.75rem;
-  color: #16a34a;
-  font-weight: bold;
-  margin: 0.3rem 0 0.5rem;
-}
-
-.membership-card p {
-  font-size: 0.95rem;
-  color: #374151;
-  margin-bottom: 0.4rem;
-}
-
-.membership-card ul {
-  margin-top: 0.5rem;
-  padding-left: 1rem;
-  color: #374151;
-  font-size: 0.9rem;
-}
-
-.membership-card ul li {
-  list-style: disc;
-  margin-bottom: 0.3rem;
-}
-
-.join-button {
-  display: inline-block;
-  background-color: #16a34a;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.join-button:hover {
-  background-color: #15803d;
-}
-
-.starhub-card {
-  margin-top: 2rem;
-  background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  max-width: 900px;
-  width: 100%;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  text-align: left;
-  color: #1f2937;
-}
-
-.starhub-card h3 {
-  font-size: 1.25rem;
-  color: #16a34a;
-  margin-bottom: 0.5rem;
-}
-
-.starhub-card p {
-  font-size: 0.95rem;
-  margin-bottom: 0.5rem;
-}
-
-.starhub-card a {
-  color: #2563eb;
-  text-decoration: underline;
+  .membership-cols > div {
+    flex: 1;
+  }
 }
 </style>

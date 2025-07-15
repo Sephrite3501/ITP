@@ -36,7 +36,9 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { logSecurityClient } from '@/utils/logUtils'
+import { useToast } from 'vue-toastification'
 
+const toast = useToast()
 const queue = ref([])
 const message = ref('')
 
@@ -47,13 +49,21 @@ const fetchQueue = async () => {
 
 const approveUser = async (submissionId, userId, userName) => {
   const refId = `VERIFY-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
   try {
     await axios.post('http://localhost:3001/api/admin/approve-user', {
       submissionId,
       userId
     }, { withCredentials: true })
 
+    // ✅ Show a toast message
+    toast.success(`${userName} approved successfully!`, {
+      timeout: 3000
+    })
+
+    // 📝 Set status message (optional if using toast)
     message.value = `${userName} approved. (Ref: ${refId})`
+
     await logSecurityClient({
       category: 'admin',
       action: 'approve_user',
@@ -66,6 +76,9 @@ const approveUser = async (submissionId, userId, userName) => {
     await fetchQueue()
   } catch (err) {
     message.value = `Approval failed. (Ref: ${refId})`
+
+    toast.error(`Approval failed for ${userName} (Ref: ${refId})`)
+
     await logSecurityClient({
       category: 'error',
       action: 'approve_user_failed',

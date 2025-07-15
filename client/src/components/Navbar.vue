@@ -1,88 +1,130 @@
 <template>
-  <nav class="navbar">
-    <div class="navbar-inner">
-      <img src="@/assets/irc-logo.png" alt="IRC Logo" class="logo" />
+  <nav class="sticky top-0 z-50 w-full bg-white border-b border-gray-200 px-6 py-3">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <!-- Logo -->
+      <img src="@/assets/irc-logo.png" alt="IRC Logo" class="w-10 h-auto" />
 
-      <ul class="nav-links">
+      <ul class="flex flex-wrap items-center gap-4 text-gray-700 font-medium">
+        <!-- COMMON NAV GROUP -->
+
         <template v-if="auth.user && !auth.isAdmin">
-          <li><router-link to="/userprofile">Profile</router-link></li>
+          <li>
+            <router-link to="/userprofile" class="hover:text-blue-600" :class="{ 'text-blue-600 font-bold': $route.path.startsWith('/userprofile') }">Profile</router-link>
+          </li>
           <li v-if="auth.user.account_status === 'inactive'">
-            <router-link to="/upload-verification">Upload Verification</router-link>
+            <router-link to="/upload-verification" class="hover:text-blue-600" :class="{ 'text-blue-600 font-bold': $route.path.startsWith('/upload-verification') }">Upload Verification</router-link>
           </li>
-          <li><router-link to="/events">Events</router-link></li>
-          <li class="dropdown">
-            <span class="dropdown-toggle">Committees</span>
-            <ul class="dropdown-menu">
-              <li><router-link to="/committees">Current Committees</router-link></li>
-              <li><router-link to="/committees/snapshots">Committees History</router-link></li>
-            </ul>
+          <li>
+            <router-link to="/events" class="hover:text-blue-600" :class="{ 'text-blue-600 font-bold': $route.path.startsWith('/events') }">Events</router-link>
           </li>
-          <li class="dropdown">
-            <span class="dropdown-toggle">IRC-SET Conference</span>
-            <ul class="dropdown-menu">
-              <li><a href="https://ircset.org/main/conference-2023/" target="_blank" rel="noopener noreferrer">IRC-SET 2023</a></li>
-              <li><a href="https://ircset.org/main/conference-2022/" target="_blank" rel="noopener noreferrer">IRC-SET 2022</a></li>
-              <li><a href="https://ircset.org/main/conference-2021/" target="_blank" rel="noopener noreferrer">IRC-SET 2021</a></li>
-              <li><a href="https://ircset.org/main/conference-2020/" target="_blank" rel="noopener noreferrer">IRC-SET 2020</a></li>
-              <li><a href="https://ircset.org/main/conference-2019/" target="_blank" rel="noopener noreferrer">IRC-SET 2019</a></li>
-              <li><a href="https://ircset.org/main/conference-2018/" target="_blank" rel="noopener noreferrer">IRC-SET 2018</a></li>
-              <li><a href="https://ircset.org/main/conference-2017/" target="_blank" rel="noopener noreferrer">IRC-SET 2017</a></li>
-              <li><a href="https://ircset.org/main/conference-2016/" target="_blank" rel="noopener noreferrer">IRC-SET 2016</a></li>
-              <li><a href="https://ircset.org/main/conference-2015/" target="_blank" rel="noopener noreferrer">IRC-SET 2015</a></li>
-            </ul>
-          </li>  
-          <li class="welcome-msg">Hi, {{ auth.user.name }}</li>
-          <li><button @click="logout" class="logout-btn">Logout</button></li>
+
+          <!-- COMMITTEES Dropdown -->
+          <li class="relative"
+              @mouseenter="showDropdown('committees')"
+              @mouseleave="hideDropdownDelayed('committees')">
+            <span class="cursor-pointer">Committees</span>
+            <transition name="fade">
+              <ul v-if="dropdownStates.committees"
+                  class="absolute left-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow z-50 divide-y transition-all">
+                <li><router-link to="/committees" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees')">Current Committees</router-link></li>
+                <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Committees History</router-link></li>
+              </ul>
+            </transition>
+          </li>
+
+          <!-- IRCSET Dropdown -->
+          <li class="relative"
+              @mouseenter="showDropdown('ircset')"
+              @mouseleave="hideDropdownDelayed('ircset')">
+            <span class="cursor-pointer">IRC-SET Conference</span>
+            <transition name="fade">
+              <ul v-if="dropdownStates.ircset"
+                  class="absolute left-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow z-50 max-h-96 overflow-y-auto divide-y transition-all">
+                <li v-for="year in conferenceYears" :key="year">
+                  <a :href="`https://ircset.org/main/conference-${year}/`" target="_blank" class="block px-4 py-2 hover:bg-gray-100">
+                    IRC-SET {{ year }}
+                  </a>
+                </li>
+              </ul>
+            </transition>
+          </li>
+
+          <li class="text-sm text-gray-500 ml-2">Hi, {{ auth.user.name }}</li>
+          <li><button @click="logout" class="text-red-600 font-semibold hover:underline">Logout</button></li>
         </template>
 
         <template v-else-if="auth.isAdmin">
-          <li class="dropdown">
-            <span class="dropdown-toggle">Management</span>
-            <ul class="dropdown-menu">
-              <li><router-link to="/admin/users">User Management</router-link></li>
-              <li><router-link to="/admin/verify-user">User Verification</router-link></li>
-              <li><router-link to="/admin/content-management">Content Management</router-link></li>
-              <li><router-link to="/admin/event-management">Event Management</router-link></li>
-              <li><router-link to="/admin/CommitteePanel">Committee Management</router-link></li>  
-            </ul>
-          </li>
-          <li class="dropdown">
-            <span class="dropdown-toggle">Committees</span>
-            <ul class="dropdown-menu">
-              <li><router-link to="/committees">Current Committees</router-link></li>
-              <li><router-link to="/committees/snapshots">Committees History</router-link></li>
-            </ul>
-          </li>
-          <li><button @click="logout" class="logout-btn">Logout</button></li>
-        </template>
-        <template v-else>
-          <li><router-link to="/home">Home</router-link></li>
-          <li class="dropdown">
-            <span class="dropdown-toggle">Committees</span>
-            <ul class="dropdown-menu">
-              <li><router-link to="/committees">Current Committees</router-link></li>
-              <li><router-link to="/committees/snapshots">Committees History</router-link></li>
-            </ul>
+          <!-- MANAGEMENT Dropdown -->
+          <li class="relative"
+              @mouseenter="showDropdown('management')"
+              @mouseleave="hideDropdownDelayed('management')">
+            <span class="cursor-pointer">Management</span>
+            <transition name="fade">
+              <ul v-if="dropdownStates.management"
+                  class="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow z-50 divide-y transition-all">
+                <li><router-link to="/admin/users" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/admin/users')">User Management</router-link></li>
+                <li><router-link to="/admin/verify-user" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/admin/verify-user')">User Verification</router-link></li>
+                <li><router-link to="/admin/content-management" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/admin/content-management')">Content Management</router-link></li>
+                <li><router-link to="/admin/event-management" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/admin/event-management')">Event Management</router-link></li>
+                <li><router-link to="/admin/CommitteePanel" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/admin/CommitteePanel')">Committee Management</router-link></li>
+              </ul>
+            </transition>
           </li>
 
-          <li><router-link to="/membership">Membership</router-link></li>
-          <li><router-link to="/events">Events</router-link></li>
-          <li class="dropdown">
-            <span class="dropdown-toggle">IRC-SET Conference</span>
-            <ul class="dropdown-menu">
-              <li><a href="https://ircset.org/main/conference-2023/" target="_blank" rel="noopener noreferrer">IRC-SET 2023</a></li>
-              <li><a href="https://ircset.org/main/conference-2022/" target="_blank" rel="noopener noreferrer">IRC-SET 2022</a></li>
-              <li><a href="https://ircset.org/main/conference-2021/" target="_blank" rel="noopener noreferrer">IRC-SET 2021</a></li>
-              <li><a href="https://ircset.org/main/conference-2020/" target="_blank" rel="noopener noreferrer">IRC-SET 2020</a></li>
-              <li><a href="https://ircset.org/main/conference-2019/" target="_blank" rel="noopener noreferrer">IRC-SET 2019</a></li>
-              <li><a href="https://ircset.org/main/conference-2018/" target="_blank" rel="noopener noreferrer">IRC-SET 2018</a></li>
-              <li><a href="https://ircset.org/main/conference-2017/" target="_blank" rel="noopener noreferrer">IRC-SET 2017</a></li>
-              <li><a href="https://ircset.org/main/conference-2016/" target="_blank" rel="noopener noreferrer">IRC-SET 2016</a></li>
-              <li><a href="https://ircset.org/main/conference-2015/" target="_blank" rel="noopener noreferrer">IRC-SET 2015</a></li>
-            </ul>
-          </li>          
-          <li><router-link to="/login">Login</router-link></li>
-          <li><router-link to="/signup">Sign Up</router-link></li>
+          <!-- COMMITTEES Dropdown (reuse names) -->
+          <li class="relative"
+              @mouseenter="showDropdown('committees')"
+              @mouseleave="hideDropdownDelayed('committees')">
+            <span class="cursor-pointer">Committees</span>
+            <transition name="fade">
+              <ul v-if="dropdownStates.committees"
+                  class="absolute left-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow z-50 divide-y transition-all">
+                <li><router-link to="/committees" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees')">Current Committees</router-link></li>
+                <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Committees History</router-link></li>
+              </ul>
+            </transition>
+          </li>
+
+          <li><button @click="logout" class="text-red-600 font-semibold hover:underline">Logout</button></li>
+        </template>
+
+        <!-- Public -->
+        <template v-else>
+          <li><router-link to="/home" class="hover:text-blue-600" :class="isActive('/home')">Home</router-link></li>
+
+          <!-- COMMITTEES Dropdown -->
+          <li class="relative"
+              @mouseenter="showDropdown('committees')"
+              @mouseleave="hideDropdownDelayed('committees')">
+            <span class="cursor-pointer">Committees</span>
+            <transition name="fade">
+              <ul v-if="dropdownStates.committees"
+                  class="absolute left-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow z-50 divide-y transition-all">
+                <li><router-link to="/committees" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees')">Current Committees</router-link></li>
+                <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Committees History</router-link></li>
+              </ul>
+            </transition>
+          </li>
+
+          <li><router-link to="/membership" class="hover:text-blue-600" :class="isActive('/membership')">Membership</router-link></li>
+          <li><router-link to="/events" class="hover:text-blue-600" :class="isActive('/events')">Events</router-link></li>
+
+          <!-- IRCSET Conference -->
+          <li class="relative"
+              @mouseenter="showDropdown('ircset')"
+              @mouseleave="hideDropdownDelayed('ircset')">
+            <span class="cursor-pointer">IRC-SET Conference</span>
+            <transition name="fade">
+              <ul v-if="dropdownStates.ircset"
+                  class="absolute left-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow z-50 max-h-96 overflow-y-auto divide-y transition-all">
+                <li v-for="year in conferenceYears" :key="year">
+                  <a :href="`https://ircset.org/main/conference-${year}/`" target="_blank" class="block px-4 py-2 hover:bg-gray-100">IRC-SET {{ year }}</a>
+                </li>
+              </ul>
+            </transition>
+          </li>
+          <li><router-link to="/login" class="hover:text-blue-600" :class="isActive('/login')">Login</router-link></li>
+          <li><router-link to="/signup" class="hover:text-blue-600" :class="isActive('/signup')">Sign Up</router-link></li>
         </template>
       </ul>
     </div>
@@ -90,31 +132,55 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { logSecurityClient } from '@/utils/logUtils.js'
 
 const router = useRouter()
+const $route = useRoute()
 const auth = useAuthStore()
+
+const conferenceYears = Array.from({ length: 9 }, (_, i) => 2023 - i)
+
+const dropdownStates = ref({
+  committees: false,
+  ircset: false,
+  management: false
+})
+
+const dropdownTimers = {}
+
+function showDropdown(name) {
+  clearTimeout(dropdownTimers[name])
+  dropdownStates.value[name] = true
+}
+
+function hideDropdownDelayed(name) {
+  dropdownTimers[name] = setTimeout(() => {
+    dropdownStates.value[name] = false
+  }, 500)
+}
+
+// Highlight active tab
+function isActive(path) {
+  return $route.path === path || $route.path.startsWith(path)
+    ? 'text-blue-600 font-bold'
+    : ''
+}
 
 onMounted(async () => {
   try {
-    const res = await fetch('http://localhost:3001/api/auth/me', {
-      credentials: 'include'
-    })
+    const res = await fetch('http://localhost:3001/api/auth/me', { credentials: 'include' })
     const data = await res.json()
-    if (res.ok && data?.user) {
-      auth.setUser(data.user)
-    }
+    if (res.ok && data?.user) auth.setUser(data.user)
   } catch {
-    // Silent fail (user not logged in)
+    // silent
   }
 })
 
 const logout = async () => {
   const traceId = `LOGOUT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
-
   try {
     await fetch('http://localhost:3001/api/auth/logout', {
       method: 'POST',
@@ -135,151 +201,14 @@ const logout = async () => {
 }
 </script>
 
-
 <style scoped>
-.navbar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background-color: #fff;
-  width: 100%;
-  margin: 0;
-  padding: 0.75rem 2rem;
-  box-sizing: border-box; /* ✅ ensures padding doesn't add extra width */
-  border-bottom: 1px solid #ddd;
+/* Simple fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
-
-.navbar-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #91afc6;
-  width: 5%;
-  height: auto;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.nav-links a {
-  text-decoration: none;
-  color: #374151;
-  font-weight: 500;
-}
-
-.nav-links a.router-link-active {
-  color: #91afc6;
-}
-
-.logout-btn {
-  background: transparent;
-  border: none;
-  font-weight: 500;
-  color: #dc2626;
-  cursor: pointer;
-}
-
-.welcome-msg {
-  color: #4b5563;
-  font-size: 0.95rem;
-}
-
-
-
-ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-li.dropdown {
-  position: relative;
-}
-
-.dropdown-toggle {
-  cursor: pointer;
-  font-weight: 500;
-  color: #374151;
-  padding: 0.5rem 0;
-  display: inline-block;
-}
-
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background-color: #ffffff;
-  min-width: 220px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  z-index: 999;
-  pointer-events: auto; /* allow hovering */
-}
-
-/* Show dropdown on hover */
-.dropdown:hover .dropdown-menu {
-  display: block;
-}
-
-/* Style dropdown items like other nav links */
-.dropdown-menu li {
-  padding-bottom: 0;
-}
-
-.dropdown-menu li a {
-  display: block;
-  padding: 0.75rem 1rem;
-  text-decoration: none;
-  color: #374151;
-  font-weight: 500;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-/* Hover and active states */
-.dropdown-menu li a:hover {
-  background-color: #f3f4f6;
-  color: #91afc6;
-}
-
-.dropdown-menu li a.router-link-active {
-  color: #91afc6;
-}
-/* Tailwind or add to your CSS */
-.dropdown {
-  position: relative;
-}
-
-.dropdown-toggle {
-  cursor: pointer;
-}
-
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  z-index: 10;
-  background-color: white;
-  min-width: 200px;
-  border: 1px solid #ccc;
-  border-radius: 0.25rem;
-}
-
-.dropdown:hover .dropdown-menu {
-  display: block;
-}
-
 </style>

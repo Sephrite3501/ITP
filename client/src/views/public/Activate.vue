@@ -1,19 +1,33 @@
 <template>
-  <section class="activation-container">
-    <div class="activation-box">
-      <h1 class="activation-title">Account Activation</h1>
-      <div v-if="loading" class="activation-message loading">
+  <section class="flex justify-center items-center px-4 py-12">
+    <div class="w-full max-w-lg bg-white p-8 sm:p-12 rounded-2xl shadow-xl text-center">
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8">Account Activation</h1>
+      
+      <div v-if="loading"
+        class="text-base mb-8 p-4 rounded-md text-gray-700 bg-gray-100">
         Activating your account...
       </div>
-
-      <div v-else-if="success" class="activation-message success">
+      
+      <div v-else-if="success"
+        class="inline-block px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition">
         ✅ Your account has been activated successfully!
-        <router-link to="/login" class="login-link">Go to Login</router-link>
+        <router-link
+          to="/login"
+          class="inline-block mt-6 px-6 py-2 rounded-md font-semibold transition text-green-950 hover:text-white hover:bg-green-600 hover:shadow focus:outline-none"
+        >
+          Go to Login
+        </router-link>
       </div>
-
-      <div v-else class="activation-message error">
+      
+      <div v-else
+        class="text-base mb-8 p-4 rounded-md text-red-700 bg-red-50 border border-red-200">
         ❌ {{ error || 'Activation failed or expired.' }}
-        <router-link to="/signup" class="login-link">Sign Up Again</router-link>
+        <router-link
+          to="/signup"
+          class="inline-block px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow hover:bg-red-700 transition"
+        >
+          Sign Up Again
+        </router-link>
       </div>
     </div>
   </section>
@@ -82,62 +96,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.activation-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #f9fafb;
-  min-height: 80vh;
-  padding: 2rem;
-}
-
-.activation-box {
-  background: white;
-  padding: 2rem 3rem;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 100%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  text-align: center;
-}
-
-.activation-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #111827;
-  margin-bottom: 1.5rem;
-}
-
-.activation-message {
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  border-radius: 6px;
-}
-
-.success {
-  color: #16a34a;
-  background-color: #ecfdf5;
-  border: 1px solid #bbf7d0;
-}
-
-.error {
-  color: #dc2626;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-}
-
-.loading {
-  color: #374151;
-}
-
-.login-link {
-  display: inline-block;
-  margin-top: 1rem;
-  color: #2563eb;
-  font-weight: 500;
-  text-decoration: underline;
-}
-</style>

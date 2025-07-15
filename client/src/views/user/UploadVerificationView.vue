@@ -1,27 +1,48 @@
 <template>
-  <section class="upload-container">
-    <div class="upload-box">
-      <h1 class="upload-title">Upload Verification Documents</h1>
-      <p class="upload-subtext">
+  <section class="flex items-center justify-center px-2">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 sm:p-10">
+      <h1 class="text-2xl font-extrabold text-center text-gray-800 mb-4">
+        Upload Verification Documents
+      </h1>
+      <p class="text-base text-center text-gray-700 mb-8">
         Please upload the following documents to verify your account:
       </p>
-
-      <form @submit.prevent="uploadDocuments" enctype="multipart/form-data">
-        <div class="form-group">
-          <label for="idDocument">ID Document</label>
-          <input id="idDocument" type="file" @change="e => handleFileChange(e, 'id')" required />
+      <form @submit.prevent="uploadDocuments" enctype="multipart/form-data" class="space-y-7">
+        <div>
+          <label for="idDocument" class="block text-sm font-medium text-gray-700 mb-1">
+            ID Document
+          </label>
+          <input
+            id="idDocument"
+            type="file"
+            class="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            @change="e => handleFileChange(e, 'id')"
+            required
+          />
         </div>
-
-        <div class="form-group">
-          <label for="proofPayment">Proof of Payment</label>
-          <input id="proofPayment" type="file" @change="e => handleFileChange(e, 'payment')" required />
+        <div>
+          <label for="proofPayment" class="block text-sm font-medium text-gray-700 mb-1">
+            Proof of Payment
+          </label>
+          <input
+            id="proofPayment"
+            type="file"
+            class="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            @change="e => handleFileChange(e, 'payment')"
+            required
+          />
         </div>
-
-        <button type="submit" :disabled="uploading">
+        <button
+          type="submit"
+          class="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+          :disabled="uploading"
+        >
           {{ uploading ? 'Uploading...' : 'Submit Documents' }}
         </button>
-
-        <p v-if="uploadStatus" :class="['upload-status', uploadStatus.includes('Failed') ? 'text-error' : 'text-success']">
+        <p
+          v-if="uploadStatus"
+          :class="['mt-4 text-center text-sm font-medium', uploadStatus.includes('Failed') ? 'text-red-600' : 'text-green-700']"
+        >
           {{ uploadStatus }}
         </p>
       </form>
@@ -32,6 +53,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { logSecurityClient } from '@/utils/logUtils'
 
 const idFile = ref(null)
@@ -39,7 +61,8 @@ const paymentFile = ref(null)
 const uploading = ref(false)
 const uploadStatus = ref('')
 const router = useRouter()
-const refId = `UPLOAD-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+const refId = `UPLOAD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+const toast = useToast()
 
 onMounted(() => {
   document.title = 'Upload Verification | IRC'
@@ -70,6 +93,7 @@ async function uploadDocuments() {
     if (!res.ok) throw new Error(result.error || 'Upload failed')
 
     uploadStatus.value = result.message || 'Documents uploaded!'
+    toast.success(uploadStatus.value || 'Documents uploaded successfully!')
     await logSecurityClient({
       category: 'user',
       action: 'documents_uploaded',
@@ -77,9 +101,13 @@ async function uploadDocuments() {
       severity: 'medium'
     })
 
-    router.push('/userprofile')
+    // Optionally redirect after showing toast (you may want a delay here!)
+    setTimeout(() => {
+      router.push('/userprofile')
+    }, 1200)
   } catch (err) {
     uploadStatus.value = `Failed to upload. Please try again. (Ref: ${refId})`
+    toast.error(uploadStatus.value)
     await logSecurityClient({
       category: 'error',
       action: 'upload_documents_failed',
@@ -91,83 +119,3 @@ async function uploadDocuments() {
   }
 }
 </script>
-
-
-<style scoped>
-.upload-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 1rem;
-  min-height: 80vh;
-  background: #f9fafb;
-}
-
-.upload-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-}
-
-.upload-title {
-  font-size: 1.75rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 0.5rem;
-  color: #111827;
-}
-
-.upload-subtext {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #4b5563;
-  font-size: 0.95rem;
-}
-
-.form-group {
-  margin-bottom: 1.2rem;
-}
-
-label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.4rem;
-  color: #374151;
-}
-
-input[type="file"] {
-  width: 100%;
-}
-
-button {
-  width: 100%;
-  padding: 0.75rem;
-  background: #2563eb;
-  color: white;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: #ccc;
-}
-
-.upload-status {
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.text-success {
-  color: #15803d;
-}
-
-.text-error {
-  color: #dc2626;
-}
-</style>

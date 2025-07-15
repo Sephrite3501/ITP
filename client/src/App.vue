@@ -1,9 +1,14 @@
 <template>
-  <div id="app">
+  <div id="app" class="min-h-screen flex flex-col font-sans text-gray-900 bg-gray-50">
     <Navbar />
-    <main class="min-h-screen bg-gray-100">
+
+    <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8 bg-gray-100">
       <router-view />
     </main>
+
+    <footer class="bg-white shadow mt-6 py-4 text-center text-gray-500 text-sm">
+      © 2015 International Researchers Club. All rights reserved.
+    </footer>
   </div>
 </template>
 
@@ -11,18 +16,7 @@
 import { useSessionWatcher } from './composables/useSessionWatcher'
 useSessionWatcher()
 
-import Navbar from './components/Navbar.vue';
+import Navbar from './components/Navbar.vue'
 </script>
 
-<style>
-/* Optional global fallback styles */
-body {
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-}
-@media (min-width: 1024px) {
-    #app {
-        display: block;
-    }
-}
-</style>
+<style scoped></style>

@@ -1,109 +1,101 @@
 <template>
-  <section class="profile-container">
-    <div class="profile-layout">
+  <section class="flex justify-center items-start px-4 py-10">
+    <div class="profile-layout w-full max-w-6xl">
       <!-- LEFT: Profile Box -->
-      <div class="profile-box">
-        <h1 class="profile-title">Your Profile</h1>
-
+      <div class="w-full lg:max-w-xl bg-white rounded-2xl shadow-xl p-8">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Your Profile</h1>
         <template v-if="!editing && !deleting">
-          <div class="profile-field">
-            <label>Name</label>
-            <p>{{ user.name }}</p>
+          <div class="mb-5">
+            <div class="mb-4"><span class="block font-medium text-gray-600">Name</span><p class="text-lg text-gray-900">{{ user.name }}</p></div>
+            <div class="mb-4"><span class="block font-medium text-gray-600">Email</span><p class="text-lg text-gray-900 break-all">{{ user.email }}</p></div>
+            <div class="mb-4"><span class="block font-medium text-gray-600">Contact Number</span><p class="text-lg text-gray-900">{{ user.contact }}</p></div>
+            <div class="mb-4"><span class="block font-medium text-gray-600">Address</span><p class="text-lg text-gray-900 break-words">{{ user.address }}</p></div>
           </div>
-          <div class="profile-field">
-            <label>Email</label>
-            <p>{{ user.email }}</p>
-          </div>
-          <div class="profile-field">
-            <label>Contact Number</label>
-            <p>{{ user.contact }}</p>
-          </div>
-          <div class="profile-field">
-            <label>Address</label>
-            <p>{{ user.address }}</p>
-          </div>
-
-          <div class="form-actions">
-            <button @click="editing = true" class="edit-button">Edit Profile</button>
-            <button @click="deleting = true" class="btn-danger">Delete My Account</button>
+          <div class="flex flex-col sm:flex-row gap-4 mt-6">
+            <button @click="editing = true" class="flex-1 py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition">Edit Profile</button>
+            <button @click="deleting = true" class="flex-1 py-2 px-4 bg-red-600 text-white font-semibold rounded-lg shadow hover:bg-red-700 transition">Delete My Account</button>
           </div>
         </template>
 
         <!-- Edit Profile Form -->
-        <form v-if="editing" @submit.prevent="saveChanges" class="profile-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Email</label>
-              <p>{{ user.email }}</p>
+        <form v-if="editing" @submit.prevent="saveChanges" class="mt-2 space-y-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+              <p class="text-gray-900 break-all">{{ user.email }}</p>
             </div>
-            <div class="form-group">
-              <label>Contact Number</label>
-              <input v-model="form.contact" type="text" placeholder="e.g. +65 9123 4567" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Address</label>
-            <input v-model="form.address" type="text" placeholder="e.g. Blk 123 Street 1, #01-01" />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Current Password <span class="required">*</span></label>
-              <input v-model="form.currentPassword" type="password" required />
-            </div>
-            <div class="form-group">
-              <label>New Password <small>(optional)</small></label>
-              <input v-model="form.newPassword" type="password" />
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Contact Number</label>
+              <input v-model="form.contact" type="text" placeholder="e.g. +65 9123 4567"
+                class="w-full border border-gray-300 rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
             </div>
           </div>
-
-          <div class="form-actions">
-            <button type="submit" class="save-button">Save Changes</button>
-            <button type="button" class="cancel-button" @click="editing = false">Cancel</button>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Address</label>
+            <input v-model="form.address" type="text" placeholder="e.g. Blk 123 Street 1, #01-01"
+              class="w-full border border-gray-300 rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">
+                Current Password <span class="text-red-600 font-bold">*</span>
+              </label>
+              <input v-model="form.currentPassword" type="password" required
+                class="w-full border border-gray-300 rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">New Password <span class="text-xs text-gray-400">(optional)</span></label>
+              <input v-model="form.newPassword" type="password"
+                class="w-full border border-gray-300 rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+            </div>
+          </div>
+          <div v-if="error" class="bg-red-100 text-red-700 rounded p-2 text-sm">{{ error }}</div>
+          <div v-if="success" class="bg-green-50 text-green-700 rounded p-2 text-sm">{{ success }}</div>
+          <div class="flex flex-col sm:flex-row gap-4 mt-6">
+            <button type="submit" class="flex-1 py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition">Save Changes</button>
+            <button type="button" class="flex-1 py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-lg shadow hover:bg-gray-300 transition" @click="editing = false">Cancel</button>
           </div>
         </form>
 
         <!-- Delete Account Form -->
-        <form v-if="deleting" @submit.prevent="deleteAccount" class="profile-form">
+        <form v-if="deleting" @submit.prevent="deleteAccount" class="mt-2 space-y-4">
           <h2 class="text-xl font-semibold text-red-600">Delete Account</h2>
-          <p class="text-sm text-gray-600 mb-3">
+          <p class="text-sm text-gray-600 mb-2">
             This action is irreversible. You will not be able to log in again unless reactivated by an admin.
           </p>
-
-          <div class="form-group">
-            <label>Confirm Password <span class="required">*</span></label>
-            <input v-model="confirmPassword" type="password" required />
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">
+              Confirm Password <span class="text-red-600 font-bold">*</span>
+            </label>
+            <input v-model="confirmPassword" type="password" required
+              class="w-full border border-gray-300 rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-red-500 transition" />
           </div>
-
-          <div class="form-actions">
-            <button type="submit" class="btn-danger">Delete My Account</button>
-            <button type="button" class="cancel-button" @click="deleting = false">Cancel</button>
+          <div class="flex flex-col sm:flex-row gap-4 mt-4">
+            <button type="submit" class="flex-1 py-2 px-4 bg-red-600 text-white font-semibold rounded-lg shadow hover:bg-red-700 transition">Delete My Account</button>
+            <button type="button" class="flex-1 py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-lg shadow hover:bg-gray-300 transition" @click="deleting = false">Cancel</button>
           </div>
-
           <p v-if="deleteMessage" class="text-sm mt-2 text-red-600">{{ deleteMessage }}</p>
         </form>
       </div>
 
       <!-- RIGHT: Registered Events -->
-      <div class="registered-events">
-        <h2 class="section-title">Your Registered Events</h2>
-        <ul v-if="registeredEvents.length > 0">
-          <li v-for="event in registeredEvents" :key="event.id" class="event-card">
-            <div class="event-header">
-              <h3>{{ event.title }}</h3>
-              <button class="unregister-button" @click="unregisterFromEvent(event.id)">✕</button>
+      <div class="flex-1 bg-white rounded-2xl shadow-xl p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Your Registered Events</h2>
+        <ul v-if="registeredEvents.length > 0" class="space-y-4">
+          <li v-for="event in registeredEvents" :key="event.id" class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div class="flex justify-between items-center mb-1">
+              <h3 class="text-lg font-bold text-gray-700">{{ event.title }}</h3>
+              <button class="ml-2 text-red-600 hover:text-red-800 font-bold text-lg" @click="unregisterFromEvent(event.id)" title="Unregister">✕</button>
             </div>
-            <p>{{ event.date }}</p>
-            <p>{{ event.location }}</p>
+            <p class="text-sm text-gray-600 mb-0.5">{{ event.date }}</p>
+            <p class="text-sm text-gray-600">{{ event.location }}</p>
           </li>
         </ul>
-        <p v-else class="no-events">You haven't registered for any events yet.</p>
+        <p v-else class="text-gray-500 italic mt-6">You haven't registered for any events yet.</p>
       </div>
     </div>
   </section>
 </template>
-
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
@@ -311,154 +303,7 @@ onMounted(() => {
 })
 </script>
 
-
 <style scoped>
-.profile-container {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 1rem;
-  background: #f9fafb;
-  min-height: 80vh;
-}
-
-.profile-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 700px;
-  margin: 0 auto;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-}
-
-.profile-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #111827;
-}
-
-.profile-field {
-  margin-bottom: 1rem;
-}
-.profile-field label {
-  font-weight: 500;
-  color: #374151;
-}
-.profile-field p {
-  margin: 0.25rem 0;
-  font-size: 1rem;
-  color: #111827;
-}
-
-.edit-button,
-.btn-danger,
-.cancel-button,
-.save-button {
-  margin-top: 1rem;
-  width: 100%;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.edit-button {
-  background: #2563eb;
-  color: white;
-}
-.cancel-button {
-  background: #e5e7eb;
-  color: #374151;
-}
-.save-button {
-  background: #2563eb;
-  color: white;
-  margin-bottom: 0.5rem;
-}
-
-.form-group {
-  margin-bottom: 1.2rem;
-  flex: 1;
-}
-.form-group label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.3rem;
-  color: #374151;
-}
-.form-group input {
-  width: 100%;
-  padding: 0.6rem;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-}
-.form-row {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .form-row {
-    flex-direction: row;
-  }
-}
-
-.required {
-  color: #dc2626;
-  margin-left: 0.25rem;
-}
-
-input {
-  color: #111827; /* visible text */
-  background-color: white;
-}
-
-input::placeholder {
-  color: #6b7280; /* visible placeholder */
-}
-
-p {
-  color: #111827; /* visible text */
-  background-color: white;
-}
-
-.profile-form input {
-  padding: 0.6rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-}
-
-.profile-form label {
-  font-weight: 500;
-  margin-bottom: 0.3rem;
-  color: #374151;
-}
-
-.form-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-@media (min-width: 640px) {
-  .form-actions {
-    flex-direction: row;
-    justify-content: flex-start;
-  }
-}
-
-.btn-danger {
-  background: #dc2626;
-  color: white;
-  margin-bottom: 0.5rem;
-}
-
 .profile-layout {
   display: flex;
   flex-direction: column;
@@ -472,66 +317,4 @@ p {
     align-items: flex-start;
   }
 }
-
-.registered-events {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  flex: 1;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  max-height: 100%;
-  overflow-y: auto;
-}
-
-.section-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #111827;
-}
-
-.event-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background-color: #f9fafb;
-}
-
-.event-card h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #1f2937;
-}
-
-.event-card p {
-  margin: 0.3rem 0;
-  color: #4b5563;
-}
-
-.no-events {
-  color: #6b7280;
-  font-style: italic;
-}
-
-.unregister-button {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  color: #dc2626;
-  cursor: pointer;
-  padding: 0;
-  margin-left: 1rem;
-  line-height: 1;
-}
-
-.unregister-button:hover {
-  color: #b91c1c;
-}
-.event-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 </style>
