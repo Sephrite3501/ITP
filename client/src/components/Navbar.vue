@@ -24,8 +24,13 @@
               <li><router-link to="/admin/content-management">Content Management</router-link></li>
               <li><router-link to="/admin/event-management">Event Management</router-link></li>
               <li><router-link to="/admin/CommitteePanel">Committee Management</router-link></li>
-              <li><router-link to="/committees">Committees</router-link></li>
-              <li><router-link to="/committees/snapshots">Committees History</router-link></li>
+              <li class="dropdown">
+                <span class="dropdown-toggle">Committees</span>
+                <ul class="dropdown-menu">
+                  <li><router-link to="/committees">Current Committees</router-link></li>
+                  <li><router-link to="/committees/snapshots">Committees History</router-link></li>
+                </ul>
+              </li>
             </ul>
             </li>
           <li><button @click="logout" class="logout-btn">Logout</button></li>
@@ -33,11 +38,30 @@
 
         <template v-else>
           <li><router-link to="/home">Home</router-link></li>
-          <li><router-link to="/committees">Committees</router-link></li>
-          <li><router-link to="/committees/snapshots">Committees History</router-link></li>
+          <li class="dropdown">
+            <span class="dropdown-toggle">Committees</span>
+            <ul class="dropdown-menu">
+              <li><router-link to="/committees">Current Committees</router-link></li>
+              <li><router-link to="/committees/snapshots">Committees History</router-link></li>
+            </ul>
+          </li>
+
           <li><router-link to="/membership">Membership</router-link></li>
           <li><router-link to="/events">Events</router-link></li>
-          <li><a href="https://irc.org.sg/irc-set-conference/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline"> IRC-SET Conference </a></li>
+          <li class="dropdown">
+            <span class="dropdown-toggle">IRC-SET Conference</span>
+            <ul class="dropdown-menu">
+              <li><a href="https://ircset.org/main/conference-2023/" target="_blank" rel="noopener noreferrer">IRC-SET 2023</a></li>
+              <li><a href="https://ircset.org/main/conference-2022/" target="_blank" rel="noopener noreferrer">IRC-SET 2022</a></li>
+              <li><a href="https://ircset.org/main/conference-2021/" target="_blank" rel="noopener noreferrer">IRC-SET 2021</a></li>
+              <li><a href="https://ircset.org/main/conference-2020/" target="_blank" rel="noopener noreferrer">IRC-SET 2020</a></li>
+              <li><a href="https://ircset.org/main/conference-2019/" target="_blank" rel="noopener noreferrer">IRC-SET 2019</a></li>
+              <li><a href="https://ircset.org/main/conference-2018/" target="_blank" rel="noopener noreferrer">IRC-SET 2018</a></li>
+              <li><a href="https://ircset.org/main/conference-2017/" target="_blank" rel="noopener noreferrer">IRC-SET 2017</a></li>
+              <li><a href="https://ircset.org/main/conference-2016/" target="_blank" rel="noopener noreferrer">IRC-SET 2016</a></li>
+              <li><a href="https://ircset.org/main/conference-2015/" target="_blank" rel="noopener noreferrer">IRC-SET 2015</a></li>
+            </ul>
+          </li>          
           <li><router-link to="/login">Login</router-link></li>
           <li><router-link to="/signup">Sign Up</router-link></li>
         </template>
@@ -213,6 +237,28 @@ li.dropdown {
 
 .dropdown-menu li a.router-link-active {
   color: #91afc6;
+}
+/* Tailwind or add to your CSS */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  z-index: 10;
+  background-color: white;
+  min-width: 200px;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+}
+
+.dropdown:hover .dropdown-menu {
+  display: block;
 }
 
 </style>
