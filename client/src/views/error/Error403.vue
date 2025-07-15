@@ -1,9 +1,20 @@
 <template>
-  <div class="error-page">
-    <h1>403 - Forbidden</h1>
-    <p>You do not have permission to access this page.</p>
-    <router-link to="/">Return to Home</router-link>
-  </div>
+  <section class="flex flex-col items-center justify-center min-h-[60vh] px-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 sm:p-10 text-center">
+      <h1 class="text-3xl font-extrabold mb-4 text-pink-600">
+        403 – Forbidden
+      </h1>
+      <p class="text-gray-700 text-base mb-6">
+        You do not have permission to access this page.
+      </p>
+      <router-link
+        to="/"
+        class="inline-block mt-2 px-6 py-2 bg-pink-600 text-white font-semibold rounded-lg shadow hover:bg-pink-700 transition"
+      >
+        Return to Home
+      </router-link>
+    </div>
+  </section>
 </template>
 
 <script setup>
@@ -15,25 +26,3 @@ onMounted(() => {
   log403Access()
 })
 </script>
-
-<style scoped>
-.error-page {
-  text-align: center;
-  padding: 4rem 1rem;
-}
-h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  color: #e83e8c;
-}
-p {
-  font-size: 1.2rem;
-  color: #000;
-}
-a {
-  margin-top: 1rem;
-  display: inline-block;
-  color: #e83e8c;
-  text-decoration: underline;
-}
-</style>
