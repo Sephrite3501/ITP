@@ -37,6 +37,7 @@
           <li><router-link to="/committees/snapshots">Committees History</router-link></li>
           <li><router-link to="/membership">Membership</router-link></li>
           <li><router-link to="/events">Events</router-link></li>
+          <li><a href="https://irc.org.sg/irc-set-conference/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline"> IRC-SET Conference </a></li>
           <li><router-link to="/login">Login</router-link></li>
           <li><router-link to="/signup">Sign Up</router-link></li>
         </template>
