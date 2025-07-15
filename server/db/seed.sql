@@ -21,7 +21,7 @@ INSERT INTO users (
 ) VALUES (
   'shawn',
   'sscoconut123@gmail.com',
-  '$2b$10$rBVNo09lwIsVtFDnIQL.c.RHIwct2gf9P4X6LxPlAGNtmySOBdF9K', -- hash of P@ssw0rd
+  '$2b$12$wTjVsyFgQiX9/hJ1s5fTxe0LQx3EFw7FvlIJV05pxg7QDGZDT/QeW', -- hash of P@ssw0rd
   '+65',
   '',
   'admin',

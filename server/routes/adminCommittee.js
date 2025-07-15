@@ -9,12 +9,13 @@ import {
   ALLOWED_ROLES
 } from '../controllers/committeeController.js'
 
-//import { requireLogin, requireAdmin } from '../utils/auth.js'
+import { requireAuth }  from '../middleware/requireAuth.js'
+import { requireAdmin } from '../middleware/requireAdmin.js'
 
 const router = express.Router()
 
-// Protect everything below
-//router.use(requireLogin, requireAdmin)
+router.use(requireAuth, requireAdmin)
+
 
 // Member search for “add to role” UI
 router.get(

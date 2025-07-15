@@ -23,12 +23,33 @@ export const ALLOWED_ROLES = [
   'Committee Member'
 ]
 
+function cleanImagePath(rawPath) {
+  if (!rawPath) return null
+
+  // Strip any HTML / tags
+  const stripped = sanitizeHtml(rawPath, {
+    allowedTags: [],
+    allowedAttributes: {}
+  })
+
+  
+  try {
+    new URL(stripped, 'http://example.com')
+
+    return stripped
+  } catch {
+ 
+    return null
+  }
+}
+
 function sanitizeMember(member = {}) {
   return {
     id:   member.id,
     name: sanitizeHtml(member.name  || '', { allowedTags: [], allowedAttributes: {} }),
     role: sanitizeHtml(member.role  || '', { allowedTags: [], allowedAttributes: {} }),
-    email: sanitizeHtml(member.email || '', { allowedTags: [], allowedAttributes: {} })
+    email: sanitizeHtml(member.email || '', { allowedTags: [], allowedAttributes: {} }),
+    imagePath: u.profile_image_path || null
   }
 }
 
@@ -40,13 +61,14 @@ export const getCommittees = async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, role FROM users WHERE role IS NOT NULL`
+      `SELECT id, name, role, profile_image_path FROM users WHERE role IS NOT NULL`
     )
 
     const all = rows.map(u => ({
       id:   u.id,
       name: sanitizeHtml(u.name, { allowedTags: [], allowedAttributes: {} }),
-      role: sanitizeHtml(u.role, { allowedTags: [], allowedAttributes: {} })
+      role: sanitizeHtml(u.role, { allowedTags: [], allowedAttributes: {} }),
+      profile_image_path: cleanImagePath(u.profile_image_path)
     }))
 
     const leadershipOrder = ['President',
@@ -60,11 +82,11 @@ export const getCommittees = async (req, res) => {
     const leadership = all
       .filter(u => leadershipOrder.includes(u.role))
       .sort((a,b) => leadershipOrder.indexOf(a.role) - leadershipOrder.indexOf(b.role))
-      .map(u => ({ role: u.role, member: { id: u.id, name: u.name } }))
+      .map(u => ({ role: u.role, member: { id: u.id, name: u.name, profile_image_path: u.profile_image_path } }))
 
     const member = all
       .filter(u => u.role === 'Committee Member')
-      .map(u => ({ id: u.id, name: u.name }))
+      .map(u => ({ id: u.id, name: u.name, profile_image_path: u.profile_image_path }))
 
     res.json({ leadership, member })
     logSecurityEvent({ traceId, action:'get_committees', status:'success', ip, userAgent:ua, message:'Listed committees' })
@@ -119,9 +141,23 @@ export const getSnapshotById = async (req, res) => {
     res.json({
       leadership: leadership.map(slot => ({
         role: slot.role,
-        member: sanitizeMember(slot.member)
+        member: sanitizeMember({
+          id: slot.member.id,
+          name: slot.member.name,
+          role: slot.member.role,
+          email: slot.member.email,
+          profile_image_path: slot.member.profile_image_path
+        })
       })),
-      member: member.map(sanitizeMember)
+      member: member.map(m =>
+        sanitizeMember({
+          id: m.id,
+          name: m.name,
+          role: m.role,
+          email: m.email,
+          profile_image_path: m.profile_image_path
+        })
+      )
     })
     logSecurityEvent({ traceId, action:'get_snapshot', status:'success', ip, userAgent:ua, message:`Fetched snapshot ${id}` })
 
@@ -146,9 +182,15 @@ export const createSnapshot = async (req, res) => {
 // internal helper; scheduled by cron in your main server file
 export async function snapshotCommittees() {
   const { rows } = await pool.query(
-    `SELECT id,name,role FROM users WHERE role IS NOT NULL`
+    `SELECT id,name,role, profile_image_path FROM users WHERE role IS NOT NULL`
   )
-  const all = rows
+  const all = rows.map(u => ({
+    id:   u.id,
+    name: sanitizeHtml(u.name  || '', { allowedTags: [], allowedAttributes: {} }),
+    role: sanitizeHtml(u.role  || '', { allowedTags: [], allowedAttributes: {} }),
+    email: sanitizeHtml(u.email || '', { allowedTags: [], allowedAttributes: {} }),
+    profile_image_path: cleanImagePath(u.profile_image_path)
+  }))
   const order = ['President',
   'Vice President',
   'Secretary',
@@ -160,11 +202,24 @@ export async function snapshotCommittees() {
   const leadership = all
     .filter(u => order.includes(u.role))
     .sort((a,b) => order.indexOf(a.role) - order.indexOf(b.role))
-    .map(u => ({ role: u.role, member: { id: u.id, name: u.name }}))
+    .map(u => ({
+      role: u.role,
+      member: {
+        id:   u.id,
+        name: u.name,
+        email: u.email,
+        profile_image_path: u.profile_image_path
+      }
+    }))
 
   const member = all
     .filter(u => u.role === 'Committee Member')
-    .map(u => ({ id: u.id, name: u.name }))
+    .map(u => ({
+      id:   u.id,
+      name: u.name,
+      email: u.email,
+      profile_image_path: u.profile_image_path
+    }))
 
   await pool.query(
     `INSERT INTO committee_snapshots (data) VALUES ($1)`,
