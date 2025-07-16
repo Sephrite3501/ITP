@@ -1,23 +1,26 @@
 <template>
-  <div class="event-detail-container">
-    <div v-if="event" class="event-detail-card">
-      <h2>{{ event.name }}</h2>
-      <p class="event-date">{{ formatDate(event.date) }}</p>
-      <p class="event-location">Location: {{ event.location }}</p>
-      <p class="event-type">Type: {{ event.event_type }}</p>
-      <p class="event-description">{{ event.description }}</p>
+  <div class="flex items-center justify-center min-h-[80vh] bg-gray-100 px-6 py-12">
+    <div v-if="event" class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 transition hover:-translate-y-1">
+      <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">{{ event.name }}</h2>
+      <p class="text-gray-700 mb-3"><span class="font-medium">📅</span> {{ formatDate(event.date) }}</p>
+      <p class="text-gray-700 mb-3"><span class="font-medium">📍</span> Location: {{ event.location }}</p>
+      <p class="text-gray-700 mb-3"><span class="font-medium">🎯</span> Type: {{ event.event_type }}</p>
+      <p class="text-gray-700 mb-6"><span class="font-medium">📝</span> {{ event.description }}</p>
+
       <button
-        class="register-button"
         @click="registerForEvent"
         :disabled="!event.poc"
-        :style="{ backgroundColor: !event.poc ? '#ccc' : '#28a745', cursor: !event.poc ? 'not-allowed' : 'pointer' }"
+        :class="[
+          'w-full py-3 rounded-md text-white text-base transition',
+          event.poc ? 'bg-green-600 hover:bg-green-700 cursor-pointer' : 'bg-gray-400 cursor-not-allowed'
+        ]"
       >
         Register
       </button>
     </div>
 
-    <div v-else class="loading">
-      Loading event details...
+    <div v-else class="text-lg text-gray-600 italic">
+      Event not found!.
     </div>
   </div>
 </template>
@@ -35,19 +38,18 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString()
 }
 
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
 onMounted(async () => {
   const slug = route.params.slug
 
   try {
-    console.log('Fetching event by slug:', slug)
     const res = await fetch(`/api/events/${slug}`)
-    console.log('Response status:', res)
-    console.log('Fetching event by slug:', slug)
-
     if (!res.ok) throw new Error('Event not found')
     event.value = await res.json()
   } catch (err) {
-    console.error('Failed to load event details:', err)
+    router.replace({ name: 'NotFound' })
   }
 })
 
@@ -86,6 +88,7 @@ async function registerForEvent() {
 </script>
 
 <style scoped>
+/*
 .event-detail-container {
   padding: 3rem 2rem;
   display: flex;
@@ -166,5 +169,5 @@ h2 {
 .register-button:hover {
   background-color: #218838;
 }
-
+*/
 </style>

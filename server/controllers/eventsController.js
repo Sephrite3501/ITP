@@ -41,6 +41,7 @@ export const getEventBySlug = async (req, res) => {
 
     if (rows.length === 0) {
       console.log("No event found with slug:", slug)
+      
       return res.status(404).json({ error: 'Event not found' })
     }
 

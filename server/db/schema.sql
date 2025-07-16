@@ -121,7 +121,8 @@ CREATE TABLE IF NOT EXISTS events (
   event_type VARCHAR(100),
   poc BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  slug VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS event_registrations (
