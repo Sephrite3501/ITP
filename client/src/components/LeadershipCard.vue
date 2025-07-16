@@ -28,6 +28,6 @@ const props = defineProps({
 })
 
 const isHighlighted = computed(
-  () => props.role.toLowerCase() === 'general chair'
+  () => props.role.toLowerCase() === 'president'
 )
 </script>
