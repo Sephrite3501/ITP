@@ -10,7 +10,7 @@ import jwt from 'jsonwebtoken';
 // SIGNUP
 export const signup = async (req, res) => {
   const traceId = `SIGNUP-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-  const { name, email, password, contact, address, memberType } = req.body;
+  const { name, email, password, contact, address, memberType, organization } = req.body;
 
   try {
     const existing = await db.query('SELECT id, account_status FROM users WHERE email=$1', [email]);
@@ -28,10 +28,11 @@ export const signup = async (req, res) => {
             contact=$3,
             address=$4,
             member_type=$5,
+            organization=$6,
             account_status='pending',
             updated_at=NOW()
-          WHERE id=$6
-        `, [name, password_hash, contact, address, memberType, user.id]);
+          WHERE id=$7
+        `, [name, password_hash, contact, address, memberType, organization, user.id]);
 
         const token = crypto.randomBytes(32).toString('hex');
         const expires = new Date(Date.now() + 15 * 60 * 1000);
@@ -87,10 +88,10 @@ export const signup = async (req, res) => {
     // New user signup
     const password_hash = await bcrypt.hash(password, 10);
     const insertRes = await db.query(`
-      INSERT INTO users (name, email, password_hash, contact, address, member_type)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO users (name, email, password_hash, contact, address, member_type, organization)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
-    `, [name, email, password_hash, contact, address, memberType]);
+    `, [name, email, password_hash, contact, address, memberType, organization]);
 
     const userId = insertRes.rows[0].id;
 

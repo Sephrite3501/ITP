@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   address TEXT,
   member_type VARCHAR(50) DEFAULT 'basic',
   user_role VARCHAR(20) DEFAULT 'user', -- renamed from "role"
+  organization VARCHAR(100) NOT NULL,
   role VARCHAR(20),
   account_status VARCHAR(20) DEFAULT 'pending',
   email_verified BOOLEAN DEFAULT FALSE,

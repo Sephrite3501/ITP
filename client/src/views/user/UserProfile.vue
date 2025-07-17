@@ -10,6 +10,7 @@
             <div class="mb-4"><span class="block font-medium text-gray-600">Email</span><p class="text-lg text-gray-900 break-all">{{ user.email }}</p></div>
             <div class="mb-4"><span class="block font-medium text-gray-600">Contact Number</span><p class="text-lg text-gray-900">{{ user.contact }}</p></div>
             <div class="mb-4"><span class="block font-medium text-gray-600">Address</span><p class="text-lg text-gray-900 break-words">{{ user.address }}</p></div>
+            <div class="mb-4"><span class="block font-medium text-gray-600">Organization</span><p class="text-lg text-gray-900">{{ user.organization }}</p></div>
           </div>
           <div class="flex flex-col sm:flex-row gap-4 mt-6">
             <button @click="editing = true" class="flex-1 py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition">Edit Profile</button>
@@ -33,6 +34,11 @@
           <div>
             <label class="block text-sm font-medium text-gray-600 mb-1">Address</label>
             <input v-model="form.address" type="text" placeholder="e.g. Blk 123 Street 1, #01-01"
+              class="w-full border border-gray-300 rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Organization</label>
+            <input v-model="form.organization" type="text" placeholder="Your organization"
               class="w-full border border-gray-300 rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -122,12 +128,14 @@ const user = reactive({
   name: '',
   email: '',
   contact: '',
-  address: ''
+  address: '',
+  organization: ''
 })
 
 const form = reactive({
   contact: '',
   address: '',
+  organization: '',
   currentPassword: '',
   newPassword: ''
 })
@@ -144,6 +152,7 @@ const fetchProfile = async () => {
     Object.assign(user, profileRes.data)
     form.contact = user.contact
     form.address = user.address
+    form.organization = user.organization
   } catch (err) {
     error.value = `Failed to load profile. Please login again. (Ref: ${refId})`
     await logSecurityClient({
@@ -206,6 +215,11 @@ const validateInputs = () => {
     error.value = `Enter a valid address (5–100 chars). (Ref: ${refId})`
     return false
   }
+  if (!form.organization || form.organization.length < 2 || form.organization.length > 100) {
+    error.value = `Enter a valid organization (2–100 chars). (Ref: ${refId})`
+    return false
+  }
+
   return true
 }
 
@@ -226,6 +240,7 @@ const saveChanges = async () => {
         email: user.email,
         contact: form.contact,
         address: form.address,
+        organization: form.organization,
         currentPassword: form.currentPassword,
         newPassword: form.newPassword || undefined
       },
@@ -234,6 +249,7 @@ const saveChanges = async () => {
 
     user.contact = form.contact
     user.address = form.address
+    user.organization = form.organization
     editing.value = false
     form.currentPassword = ''
     form.newPassword = ''

@@ -134,6 +134,23 @@
           />
           <p v-if="errors.address" class="text-xs text-red-600 mt-1">{{ errors.address }}</p>
         </div>
+        <!-- Organization -->
+        <div>
+          <label for="organization" class="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+          <input
+            id="organization"
+            v-model.trim="form.organization"
+            type="text"
+            autocomplete="organization"
+            :class="[
+              'w-full border rounded-lg py-2 px-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition',
+              errors.organization ? 'border-red-500' : form.organization ? 'border-green-500' : 'border-gray-300'
+            ]"
+            placeholder="Your organization"
+            @blur="markTouched('organization')"
+          />
+          <p v-if="errors.organization" class="text-xs text-red-600 mt-1">{{ errors.organization }}</p>
+        </div>
         <!-- Member Type -->
         <div>
           <label for="memberType" class="block text-sm font-medium text-gray-700 mb-1">Member Type</label>
@@ -190,6 +207,7 @@ const form = reactive({
   contactNumber: '',
   address: '',
   memberType: '',
+  organization: '',
   agreed: true,  // Checkbox for terms agreement (change to false if user must agree)
   recaptchaToken: ''
 })
@@ -209,7 +227,8 @@ const fields = [
   { id: 'confirmPassword', label: 'Confirm Password:', model: 'confirmPassword', type: 'password', autocomplete: 'new-password' },
   { id: 'contactNumber', label: 'Contact Number:', model: 'contactNumber', type: 'text', autocomplete: 'tel' },
   { id: 'address', label: 'Address:', model: 'address', type: 'text', autocomplete: 'street-address' },
-  { id: 'memberType', label: 'Member Type:', model: 'memberType', type: 'select' }
+  { id: 'memberType', label: 'Member Type:', model: 'memberType', type: 'select' },
+  { id: 'organization', label: 'Organization:', model: 'organization', type: 'text', autocomplete: 'organization' }
 ]
 
 onMounted(() => {
@@ -265,6 +284,12 @@ const validateField = (field) => {
     case 'agreed':
       if (!form.agreed) errors.agreed = 'You must agree before registering'
       break
+    case 'organization':
+      if (!value) errors.organization = 'Organization is required';
+      else if (value.length < 2 || value.length > 100) {
+        errors.organization = 'Organization must be between 2 and 100 characters'
+      }
+      break;    
   }
 }
 
@@ -323,6 +348,7 @@ const onSubmit = async () => {
           contact: form.contactNumber,
           address: form.address,
           member_type: form.memberType,
+          organization: form.organization,
           recaptchaToken: form.recaptchaToken
         })
       })

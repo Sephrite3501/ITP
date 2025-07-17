@@ -36,6 +36,7 @@ export const getUserProfile = async (req, res) => {
       address: user.address,
       memberType: user.member_type,
       accountStatus: user.account_status,
+      organization: user.organization, // Ensure organization is included
       submittedDocs: [] // Future expansion
     });
 
@@ -49,7 +50,7 @@ export const getUserProfile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   const traceId = `USR-UPD-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-  const { email, contact, address, currentPassword, newPassword } = req.body;
+  const { email, contact, address, organization, currentPassword, newPassword } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   const userAgent = req.headers['user-agent'];
 
@@ -82,6 +83,10 @@ export const updateProfile = async (req, res) => {
     if (address) {
       updates.push(`address=$${i++}`);
       values.push(sanitizeHtml(address));
+    }
+    if (organization) {
+      updates.push(`organization=$${i++}`);
+      values.push(sanitizeHtml(organization));
     }
     if (newPassword) {
       const hashed = await bcrypt.hash(newPassword, 10);
