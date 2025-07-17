@@ -1,41 +1,43 @@
 <template>
-  <section class="flex flex-col items-center px-4 py-12 bg-gray-50">
-    <!-- Page Title -->
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-4xl font-bold text-gray-900">Committees</h1>
+  <section class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6 text-center">Committees</h1>
+    <span class="block w-48 h-1 bg-yellow-400 rounded mb-8 mx-auto"></span>
+
+    <!-- Loading / Error -->
+    <div v-if="isLoading" class="text-gray-600 text-center py-10 animate-pulse">
+      Loading…
     </div>
-    <span class="block w-24 h-1 bg-yellow-400 rounded-lg mb-10"></span>
+    <div v-else-if="error" class="text-red-500 text-center py-10">
+      {{ error }}
+    </div>
 
-    <!-- Loading / Error Handling -->
-    <div v-if="isLoading" class="text-gray-600 text-lg py-10 animate-pulse">Loading…</div>
-    <div v-else-if="error" class="text-red-500 py-10 text-center text-lg font-medium">{{ error }}</div>
-
-    <!-- Loaded Content -->
-    <div v-else class="w-full max-w-7xl">
-      <!-- Leadership Row -->
-      <div class="mb-14">
-        <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">Leadership</h2>
-        <div class="leadership-cols">
-          <LeadershipCard
-            v-for="slot in leadership"
-            :key="slot.role"
-            :role="slot.role"
-            :member="slot.member"
-          />
-        </div>
-      </div>
-
-      <!-- Committee Members Grid -->
-      <div>
-        <h2 class="text-2xl font-extrabold text-gray-700 mb-6 text-center">Committee Members</h2>
-        <div class="chair-cols">
-          <ChairCard
-            v-for="m in member"
-            :key="m.id"
-            :member="m"
-          />
-        </div>
-      </div>
+    <!-- Table -->
+    <div v-else>
+      <table class="table-auto w-full border-collapse">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="px-4 py-2 border text-left">Position</th>
+            <th class="px-4 py-2 border text-left">Name</th>
+            <th class="px-4 py-2 border text-left">Organization</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(row, idx) in tableRows"
+            :key="`${row.position}-${row.name}-${idx}`"
+            class="even:bg-gray-50"
+          >
+            <td class="px-4 py-2 border">{{ row.position }}</td>
+            <td class="px-4 py-2 border">{{ row.name }}</td>
+            <td class="px-4 py-2 border">{{ row.organization }}</td>
+          </tr>
+          <tr v-if="!tableRows.length">
+            <td colspan="3" class="px-4 py-2 border text-center text-gray-500">
+              No committee data available.
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </section>
 </template>
@@ -43,10 +45,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
-import LeadershipCard from '../../components/LeadershipCard.vue'
-import ChairCard from '../../components/ChairCard.vue'
 
-// Axios global config
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
 axios.defaults.withCredentials = true
 axios.defaults.headers.common['Cache-Control'] = 'no-store'
@@ -60,40 +59,44 @@ const raw       = ref({ leadership: [], member: [] })
 const isLoading = ref(true)
 const error     = ref(null)
 
-function sanitizeMember(member = {}) {
-  return {
-    ...member,
-    name:  typeof member.name  === 'string' ? member.name.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '',
-    email: typeof member.email === 'string' ? member.email.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''
-  }
-}
-
-const fetchCommittees = async () => {
+async function fetchCommittees() {
+  isLoading.value = true
+  error.value     = null
   try {
     const { data } = await axios.get('/api/committees')
 
-    raw.value.leadership = Array.isArray(data.leadership)
-      ? data.leadership.map(slot => ({
-          role: slot.role,
-          member: sanitizeMember(slot.member)
-        }))
-      : []
-
-    raw.value.member = Array.isArray(data.member)
-      ? data.member.map(m => sanitizeMember(m))
-      : []
-
+    raw.value.leadership = data.leadership || []
+    raw.value.member     = data.member     || []
   } catch (err) {
     console.error('Failed to load committees:', err)
-    error.value = 'Failed to load committees'
+    error.value = 'Failed to load committees.'
   } finally {
     isLoading.value = false
   }
 }
 
 onMounted(fetchCommittees)
-const leadership = computed(() => raw.value.leadership)
-const member = computed(() => raw.value.member)
+
+const tableRows = computed(() => {
+  const rows = []
+  // 1) leadership slots in the order your API returned them
+  for (const slot of raw.value.leadership) {
+    rows.push({
+      position:     slot.role,
+      name:         slot.member.name,
+      organization: slot.member.organization || ''
+    })
+  }
+  // 2) then each committee member
+  for (const m of raw.value.member) {
+    rows.push({
+      position:     'Committee Member',
+      name:         m.name,
+      organization: m.organization || ''
+    })
+  }
+  return rows
+})
 </script>
 
 <style scoped>

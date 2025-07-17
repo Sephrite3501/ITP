@@ -1,6 +1,25 @@
 <template>
   <section class="p-6 pl-64 bg-[#c0bebe] min-h-screen text-gray-900">
     <h1 class="text-4xl font-bold mb-10 text-green-500">Committees Management</h1>
+    <div class="mb-10">
+      <label class="block font-semibold mb-2">Term Length (years)</label>
+      <div class="flex items-center space-x-2">
+        <input
+          type="number"
+          v-model.number="termYears"
+          min="1"
+          max="10"
+          class="border px-2 py-1 w-20 rounded"
+        />
+        <button
+          @click="saveTerm"
+          class="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Save
+        </button>
+      </div>
+      <p v-if="termError" class="text-red-500 mt-1">{{ termError }}</p>
+    </div>
 
     <div v-for="role in roles" :key="role" class="mb-16 pb-2.5">
       <div class="bg-white border border-gray-200 rounded-lg shadow-md p-5">
@@ -66,7 +85,7 @@
 
 
 <script setup>
-import { reactive, onMounted } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import axios from 'axios'
 
 
@@ -83,6 +102,27 @@ axios.interceptors.request.use(cfg => {
 function getCsrfToken() {
   const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
   return match ? decodeURIComponent(match[1]) : null
+}
+
+const termYears = ref(2)
+const termError = ref(null)
+
+async function fetchTerm() {
+  try {
+    const { data } = await axios.get('/api/admin/committees/settings')
+    termYears.value = data.termYears
+  } catch (err) {
+    console.warn('Could not load term settings', err)
+  }
+}
+
+async function saveTerm() {
+  termError.value = null
+  try {
+    await axios.post('/api/admin/committees/settings', { termYears: termYears.value })
+  } catch (err) {
+    termError.value = err.response?.data?.errors?.[0]?.msg || 'Failed to save term length'
+  }
 }
 
 function debounce(fn, wait = 300) {
@@ -129,8 +169,6 @@ async function fetchAssignments() {
     // optionally report to your client-side logger (Sentry, etc.)
   }
 }
-onMounted(fetchAssignments)
-
 // 4) Add/remove toggles
 function openAdd(role) {
   showAdd[role] = true
@@ -140,6 +178,13 @@ function openAdd(role) {
 function closeAdd(role) {
   setTimeout(() => (showAdd[role] = false), 100)
 }
+
+onMounted(() => {
+  fetchTerm()
+  fetchAssignments()
+})
+
+
 
 // 5) Debounced search (prevents DoS/spam)
 const debouncedSearch = debounce(async role => {

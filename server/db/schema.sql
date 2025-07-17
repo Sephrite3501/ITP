@@ -17,11 +17,21 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+
 CREATE TABLE committee_snapshots (
-  id         SERIAL PRIMARY KEY,
-  taken_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  data       JSONB                NOT NULL
+  id            SERIAL PRIMARY KEY,
+  taken_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  period_start  TIMESTAMPTZ NOT NULL,
+  period_end    TIMESTAMPTZ NOT NULL,
+  data          JSONB       NOT NULL
 );
+
+
+CREATE TABLE committee_settings (
+  id         SERIAL PRIMARY KEY,
+  term_years INT NOT NULL DEFAULT 2 CHECK (term_years BETWEEN 1 AND 10)
+);
+
 
 CREATE TABLE payment_submissions (
   id SERIAL PRIMARY KEY,
