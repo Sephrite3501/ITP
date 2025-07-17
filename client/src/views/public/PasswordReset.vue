@@ -113,8 +113,10 @@ const validatePassword = () => {
   passwordError.value = ''
   if (!pwd) {
     passwordError.value = 'Password is required'
-  } else if (pwd.length < 8 || !/[A-Z]/.test(pwd)) {
-    passwordError.value = 'Password must be at least 8 characters with one uppercase letter'
+  } else if (pwd.length < 8) {
+    passwordError.value = 'Password must be at least 8 characters'
+  } else if (!/[A-Z]/.test(pwd)) {
+    passwordError.value = 'Password must contain at least one uppercase letter'
   }
 }
 

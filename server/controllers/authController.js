@@ -4,11 +4,18 @@ import db from '../db/index.js';
 import { sendActivationEmail, sendOtpEmail, sendResetPasswordEmail } from '../services/emailService.js';
 import { logSecurityEvent } from '../services/logService.js';
 import { generateAuthToken, saveSessionToken } from '../utils/tokenUtils.js';
+import { validationResult } from 'express-validator';
+
 
 import jwt from 'jsonwebtoken';
 
 // SIGNUP
 export const signup = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
   const traceId = `SIGNUP-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
   const { name, email, password, contact, address, memberType, organization } = req.body;
 
@@ -229,6 +236,11 @@ export const activateAccount = async (req, res) => {
 
 // LOGIN
 export const loginRequest = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
   const traceId = `LOGIN-REQ-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
   const { email, password } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -292,6 +304,11 @@ export const loginRequest = async (req, res) => {
 };
 
 export const loginVerify = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
   const traceId = `LOGIN-VER-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
   const { email, otp } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -365,6 +382,11 @@ export const loginVerify = async (req, res) => {
 
 // PASSWORD RESET
 export const requestReset = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
   const traceId = `PWD-REQ-${Math.random().toString(36).substr(2,5).toUpperCase()}`;
   const { email } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
@@ -407,6 +429,11 @@ export const validateResetToken = async (req, res) => {
 };
 
 export const resetPassword = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
   const traceId = `PWD-RESET-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
   const { token, password } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress;

@@ -240,11 +240,14 @@ const validateInputs = () => {
     error.value = `Enter a valid address (5–100 chars). (Ref: ${refId})`
     return false
   }
-  if (!form.organization || form.organization.length < 2 || form.organization.length > 100) {
+  if (form.organization && form.organization.length < 2 && form.organization.length > 100) {
     error.value = `Enter a valid organization (2–100 chars). (Ref: ${refId})`
     return false
   }
-
+  if (form.newPassword && form.newPassword.length < 8 && !/[A-Z]/.test(form.newPassword)) {
+  error.value = `Password must be at least 8 characters. (Ref: ${refId})`
+  return false
+  }
   return true
 }
 

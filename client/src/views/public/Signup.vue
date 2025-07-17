@@ -184,6 +184,7 @@
           >
             {{ loading ? 'Registering...' : 'Sign Up' }}
           </button>
+          <p v-if="submitError" class="text-xs text-red-600 mt-2 text-center">{{ submitError }}</p>
         </div>
       </form>
     </div>
@@ -213,6 +214,7 @@ const form = reactive({
 })
 
 const errors = reactive({})
+const submitError = ref('')
 const loading = ref(false)
 const showPassword = reactive({ password: false, confirmPassword: false })
 const touchedFields = reactive({})
@@ -363,7 +365,7 @@ const onSubmit = async () => {
         })
         router.push('/signupsuccess')
       } else {
-        errors.email = result.error
+        submitError.value = result.error
           ? `${result.error} (Ref: ${refId})`
           : `Signup failed. (Ref: ${refId})`
 
@@ -375,7 +377,7 @@ const onSubmit = async () => {
         })
       }
     } catch (err) {
-      errors.email = getFriendlyError(err, 'Signup error.', refId)
+      submitError.value = getFriendlyError(err, 'Signup error.', refId)
       await logSecurityClient({
         category: 'error',
         action: 'signup_exception',

@@ -15,7 +15,8 @@ import {
   validateSignup,
   validateLogin,
   validateResetRequest,
-  validateNewPassword
+  validateNewPassword,
+  validateOtp
 } from '../validators/authValidator.js'
 
 import { verifyCaptcha } from '../middleware/verifyCaptcha.js'
@@ -31,7 +32,7 @@ router.get('/activate', activateAccount)
 
 // 🔐 LOGIN & OTP
 router.post('/login', loginLimiter, verifyCaptcha, validateLogin, loginRequest)
-router.post('/verify-otp', loginVerify)
+router.post('/verify-otp', validateOtp, loginVerify)
 
 // 🔐 PASSWORD RESET
 router.post('/reset-request', authLimiter, verifyCaptcha, validateResetRequest, requestReset)

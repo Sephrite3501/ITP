@@ -7,6 +7,7 @@ import { validateAndSaveFiles } from '../utils/uploadMiddleware.js';
 import path from 'path';
 import fs from 'fs/promises';
 import sharp from 'sharp';
+import { validationResult } from 'express-validator';
 
 const findUserByEmail = async (email) => {
   const res = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
@@ -82,6 +83,11 @@ export const getProfilePicture = async (req, res) => {
 }
 
 export const updateProfile = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
   const traceId = `USR-UPD-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
   const { email, contact, address, organization, currentPassword, newPassword } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
