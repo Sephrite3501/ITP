@@ -19,6 +19,7 @@ import logRoutes from './routes/log.js';
 import committeeRoutes from './routes/committee.js';
 import adminCommitteeRoutes from './routes/adminCommittee.js';
 import { snapshotCommittees } from './controllers/committeeController.js';
+import logsRoutes from './routes/logs.js';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use('/api/admin/committees', adminCommitteeRoutes);
 app.use('/api/events', eventsRouter);
 app.use('/api/log', logRoutes);
 app.use('/api/protected', protectedRoutes);
+app.use('/api/logs', logsRoutes);
 
 // Root route
 app.get('/', (req, res) => {

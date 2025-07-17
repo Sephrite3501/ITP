@@ -133,6 +133,11 @@ const routes = [
     path: '/admin/CommitteePanel',
     component: () => import('@/views/admin/AdminCommitteePanel.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/Logs',
+    component: () => import('@/views/admin/ViewLogs.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

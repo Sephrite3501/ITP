@@ -64,6 +64,11 @@
         </template>
 
         <template v-else-if="auth.isAdmin">
+
+          <li>
+            <router-link to="/admin/logs" class="text-black hover:underline" :class="isActive('/admin/logs')">Logs</router-link>
+          </li>
+
           <!-- MANAGEMENT Dropdown -->
           <li class="relative"
               @mouseenter="showDropdown('management')"
