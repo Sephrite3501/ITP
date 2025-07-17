@@ -5,6 +5,9 @@
       <div class="w-full lg:max-w-xl bg-white rounded-2xl shadow-xl p-8">
         <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Your Profile</h1>
         <template v-if="!editing && !deleting">
+          <div v-if="user.profile_image_path" class="mb-4 flex flex-col items-center">
+            <img v-if="photoDataURL" :src="photoDataURL" alt="Profile Photo" class="rounded-lg border object-cover max-w-[160px] max-h-[160px]"/>
+          </div>
           <div class="mb-5">
             <div class="mb-4"><span class="block font-medium text-gray-600">Name</span><p class="text-lg text-gray-900">{{ user.name }}</p></div>
             <div class="mb-4"><span class="block font-medium text-gray-600">Email</span><p class="text-lg text-gray-900 break-all">{{ user.email }}</p></div>
@@ -104,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed} from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useAuthStore } from '../../stores/authStore'
@@ -118,6 +121,7 @@ const toast = useToast()
 const editing = ref(false)
 const deleting = ref(false)
 const loading = ref(false)
+const photoDataURL = ref(null)
 const error = ref('')
 const success = ref('')
 const confirmPassword = ref('')
@@ -141,6 +145,27 @@ const form = reactive({
 })
 
 const registeredEvents = ref([])
+
+async function fetchProfilePhoto() {
+  try {
+    const blob = await axios.get("http://localhost:3001/api/user/profile-photo", {
+      responseType: "blob",
+      withCredentials: true
+    }).then(res => res.data);
+    photoDataURL.value = await blobToDataURL(blob);
+  } catch (error) {
+    photoDataURL.value = null;
+  }
+}
+
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
 const fetchProfile = async () => {
   try {
@@ -316,6 +341,7 @@ onMounted(() => {
   document.title = 'User Profile | IRC'
   fetchProfile()
   fetchRegisteredEvents()
+  fetchProfilePhoto()
 })
 </script>
 

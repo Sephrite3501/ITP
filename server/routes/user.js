@@ -2,6 +2,7 @@
 import express from 'express'
 import {
   getUserProfile,
+  getProfilePicture,
   updateProfile,
   deleteAccount,
   submitVerificationDocs,
@@ -20,6 +21,7 @@ router.use(requireAuth)
 
 // 🧑 User endpoints
 router.get('/user-profile', getUserProfile)
+router.get('/profile-photo', getProfilePicture)
 router.post('/update-profile', updateProfile)
 router.post('/delete-account', deleteAccount)
 router.get('/registered-events', getUserRegisteredEvents)
@@ -30,7 +32,8 @@ router.post(
   '/upload-documents',
   upload.fields([
     { name: 'paymentProof', maxCount: 1 },
-    { name: 'identityProof', maxCount: 1 }
+    { name: 'identityProof', maxCount: 1 },
+    { name: 'profilePicture', maxCount: 1 }
   ]),
   submitVerificationDocs
 )

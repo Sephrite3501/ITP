@@ -4,6 +4,9 @@ import pool from '../db/index.js';
 import { logSecurityEvent } from '../services/logService.js';
 import sanitizeHtml from 'sanitize-html';
 import { validateAndSaveFiles } from '../utils/uploadMiddleware.js';
+import path from 'path';
+import fs from 'fs/promises';
+import sharp from 'sharp';
 
 const findUserByEmail = async (email) => {
   const res = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
@@ -36,7 +39,8 @@ export const getUserProfile = async (req, res) => {
       address: user.address,
       memberType: user.member_type,
       accountStatus: user.account_status,
-      organization: user.organization, // Ensure organization is included
+      organization: user.organization,
+      profile_image_path: user.profile_image_path,
       submittedDocs: [] // Future expansion
     });
 
@@ -47,6 +51,35 @@ export const getUserProfile = async (req, res) => {
     res.status(500).json({ error: `Internal server error. (Ref: ${traceId})` });
   }
 };
+
+export const getProfilePicture = async (req, res) => {
+  const userId = req.user.id
+  // Get photo path from DB
+  const { rows } = await pool.query('SELECT profile_image_path FROM users WHERE id = $1', [userId])
+  const p = rows[0]?.profile_image_path
+  if (!p) return res.status(404).end()
+
+  const baseDir = path.resolve('./uploads')
+  const absPath = path.resolve(baseDir, path.basename(p))
+  if (!absPath.startsWith(baseDir)) return res.status(400).end()
+
+  try {
+    await fs.access(absPath)
+    // (Optional) Output-time validation:
+    const { width, height } = await sharp(absPath).metadata()
+    const ratio = width / height
+    const correctAspect = Math.abs(ratio - (7/9)) < 0.03
+    if (!(correctAspect && width >= 350 && height >= 450)) {
+      // Could send a placeholder image or 404
+      return res.status(415).json({ error: "Profile photo fails output validation" })
+    }
+    const ext = path.extname(absPath).toLowerCase()
+    res.set('Content-Type', ext === '.png' ? 'image/png' : 'image/jpeg')
+    res.sendFile(absPath)
+  } catch {
+    res.status(404).end()
+  }
+}
 
 export const updateProfile = async (req, res) => {
   const traceId = `USR-UPD-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
@@ -160,9 +193,9 @@ export const submitVerificationDocs = async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
   const userAgent = req.headers['user-agent']
 
-  if (!req.files || !req.files.paymentProof || !req.files.identityProof) {
+  if (!req.files || !req.files.paymentProof || !req.files.identityProof || !req.files.profilePicture) {
     await logSecurityEvent({ traceId, userEmail: email, action: 'submit_verification_docs', status: 'failed', ip, userAgent, message: 'Missing required files' })
-    return res.status(400).json({ error: 'Both payment and identity documents are required.' })
+    return res.status(400).json({ error: 'All documents are required.' })
   }
 
   try {
@@ -173,12 +206,17 @@ export const submitVerificationDocs = async (req, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    const { paymentProof, identityProof } = await validateAndSaveFiles(req.files, email)
+    const { paymentProof, identityProof, profilePicture } = await validateAndSaveFiles(req.files, email)
 
     await pool.query(
       `INSERT INTO payment_submissions (user_id, payment_path, identity_path)
        VALUES ($1, $2, $3)`,
       [userId, paymentProof, identityProof]
+    )
+    // Save profile photo to user profile
+    await pool.query(
+      `UPDATE users SET profile_image_path = $1 WHERE id = $2`,
+      [profilePicture, userId]
     )
 
     await logSecurityEvent({
@@ -224,7 +262,6 @@ export const getUserFromToken = async (token) => {
     return null;
   }
 };
-
 
 export const getUserRegisteredEvents = async (req, res) => {
   const token = req.cookies?.auth_token

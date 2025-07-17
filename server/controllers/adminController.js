@@ -153,18 +153,19 @@ export const getVerificationQueue = async (req, res) => {
   const refId = `VERIFYQ-${Date.now()}`;
   try {
     const result = await db.query(`
-      SELECT 
-        p.id AS submission_id,
-        u.id AS user_id,
-        u.name,
-        u.email,
-        p.payment_path,
-        p.identity_path,
-        p.submitted_at
-      FROM payment_submissions p
-      JOIN users u ON p.user_id = u.id
-      WHERE p.status = 'pending'
-      ORDER BY p.submitted_at DESC
+    SELECT 
+      p.id AS submission_id,
+      u.id AS user_id,
+      u.name,
+      u.email,
+      u.profile_image_path,
+      p.payment_path,
+      p.identity_path,
+      p.submitted_at
+    FROM payment_submissions p
+    JOIN users u ON p.user_id = u.id
+    WHERE p.status = 'pending'
+    ORDER BY p.submitted_at DESC
     `);
     res.json(result.rows);
   } catch (err) {

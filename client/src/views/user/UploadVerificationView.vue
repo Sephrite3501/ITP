@@ -9,6 +9,19 @@
       </p>
       <form @submit.prevent="uploadDocuments" enctype="multipart/form-data" class="space-y-7">
         <div>
+          <label for="profilePicture" class="block text-sm font-medium text-gray-700 mb-1">
+            Passport Photo
+          </label>
+          <input
+            id="profilePicture"
+            type="file"
+            class="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            @change="e => handleFileChange(e, 'profile')"
+            required
+            accept="image/jpeg, image/png"
+          />
+        </div>
+        <div>
           <label for="idDocument" class="block text-sm font-medium text-gray-700 mb-1">
             ID Document
           </label>
@@ -58,6 +71,7 @@ import { logSecurityClient } from '@/utils/logUtils'
 
 const idFile = ref(null)
 const paymentFile = ref(null)
+const profileFile = ref(null)
 const uploading = ref(false)
 const uploadStatus = ref('')
 const router = useRouter()
@@ -72,6 +86,19 @@ function handleFileChange(event, type) {
   const file = event.target.files[0]
   if (type === 'id') idFile.value = file
   if (type === 'payment') paymentFile.value = file
+  if (type === 'profile') {
+    const img = new window.Image();
+    img.onload = () => {
+      const ratio = img.width / img.height;
+      if (Math.abs(ratio - (7/9)) > 0.03) {
+        alert('Passport photo must have an aspect ratio of 7:9!');
+        event.target.value = '';
+        return;
+      }
+      profileFile.value = file;
+    };
+    img.src = URL.createObjectURL(file);
+  }
 }
 
 async function uploadDocuments() {
@@ -81,6 +108,7 @@ async function uploadDocuments() {
   const formData = new FormData()
   formData.append('identityProof', idFile.value)
   formData.append('paymentProof', paymentFile.value)
+  formData.append('profilePicture', profileFile.value)
 
   try {
     const res = await fetch('http://localhost:3001/api/user/upload-documents', {

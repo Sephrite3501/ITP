@@ -9,6 +9,7 @@ export const requireAdmin = (req, res, next) => {
     logSecurityEvent({
       traceId,
       userId: req.user?.id || null,
+      refId: traceId,
       action: 'require_admin_check',
       status: 'denied',
       ip,

@@ -18,8 +18,9 @@
           <td class="py-2 px-4">{{ user.email }}</td>
           <td class="py-2 px-4">{{ new Date(user.submitted_at).toLocaleString() }}</td>
           <td class="py-2 px-4">
-            <a :href="`http://localhost:3001/api/protected/download/${user.payment_path?.split('/').pop()}`" target="_blank">Payment</a> |
-            <a :href="`http://localhost:3001/api/protected/download/${user.identity_path?.split('/').pop()}`" target="_blank">ID</a>
+            <a :href="`http://localhost:3001/api/protected/download/${user.profile_image_path?.split('/').pop()}`" target="_blank" rel="noopener">Passport Photo</a> |
+            <a :href="`http://localhost:3001/api/protected/download/${user.payment_path?.split('/').pop()}`" target="_blank" rel="noopener">Payment</a> |
+            <a :href="`http://localhost:3001/api/protected/download/${user.identity_path?.split('/').pop()}`" target="_blank" rel="noopener">ID</a>
           </td>
           <td class="py-2 px-4">
             <button @click="approveUser(user.submission_id, user.user_id, user.name)" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Approve</button>
