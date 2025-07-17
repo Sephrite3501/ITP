@@ -2,7 +2,7 @@
 
 -- Insert admin user
 INSERT INTO users (
-  name, email, password_hash, contact, address, user_role, account_status, email_verified, created_at, updated_at
+  name, email, password_hash, contact, address, user_role, organization, account_status, email_verified, created_at, updated_at
 ) VALUES (
   'Ryan Koo',
   'weifeng2604@gmail.com',
@@ -10,14 +10,17 @@ INSERT INTO users (
   '+6598009800',
   'Blk 567 Street 52, #10-152',
   'admin',
+  'HI',
   'active',
   false,
   NOW(),
   NOW()
 );
 
+INSERT INTO committee_settings (term_years) VALUES (2);
+
 INSERT INTO users (
-  name, email, password_hash, contact, address, user_role, role, account_status, email_verified, created_at, updated_at
+  name, email, password_hash, contact, address, user_role, role, organization, account_status, email_verified, created_at, updated_at
 ) VALUES (
   'shawn',
   'sscoconut123@gmail.com',
@@ -26,6 +29,7 @@ INSERT INTO users (
   '',
   'admin',
   'Committee Member',
+  'SIT',
   'active',
   false,
   NOW(),

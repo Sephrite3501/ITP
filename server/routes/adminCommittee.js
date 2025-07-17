@@ -3,6 +3,8 @@ import express from 'express'
 import { query, body } from 'express-validator'
 
 import {
+  getSettings,
+  updateSettings,
   searchMembers,
   updateLeadership,
   deleteLeadership,
@@ -44,5 +46,20 @@ router.delete(
     .isInt({ min:1 }).withMessage('memberId must be positive integer'),
   deleteLeadership
 )
+
+router.get(
+  '/settings',
+  getSettings
+)
+router.post(
+  '/settings',
+  body('termYears')
+    .toInt()                                        // ← coerce into an integer
+    .isInt({ min: 1, max: 10 })
+    .withMessage('Term must be between 1 and 10 Years'),
+  updateSettings
+)
+
+
 
 export default router

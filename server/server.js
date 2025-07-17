@@ -7,8 +7,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import cron from 'node-cron';
-
+import { scheduleNextSnapshot } from './services/snapshotScheduler.js'
 import protectedRoutes from './routes/protected.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
@@ -18,7 +17,6 @@ import adminRoutes from './routes/admin.js';
 import logRoutes from './routes/log.js';
 import committeeRoutes from './routes/committee.js';
 import adminCommitteeRoutes from './routes/adminCommittee.js';
-import { snapshotCommittees } from './controllers/committeeController.js';
 import logsRoutes from './routes/logs.js';
 
 dotenv.config();
@@ -58,9 +56,6 @@ app.get('/', (req, res) => {
   res.send('IRC API running.');
 });
 
-// Snapshot job
-cron.schedule('0 0 1 1,7 *', snapshotCommittees);
-
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'API route not found' });
@@ -75,3 +70,9 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`🚀 IRC backend running on port ${PORT}`);
 });
+
+scheduleNextSnapshot().catch(console.error)
+
+app.listen(process.env.PORT || 3001, () => {
+  console.log(`Server listening on port ${process.env.PORT||3001}`)
+})
