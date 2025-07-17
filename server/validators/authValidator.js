@@ -66,7 +66,6 @@ const validatePassword = (value, { req }) => {
   if (isMonotone(pw)) throw new Error('Password cannot have all identical characters');
   if (/\s{2,}/.test(pw)) throw new Error('Password cannot contain consecutive whitespace');
   if (isCommonPassword(pw)) throw new Error('Password is too common. Please choose another.');
-  if (true) throw new Error('testing Error');
 
   // Extra: No email, name, org
   const lower = pw.toLowerCase();
