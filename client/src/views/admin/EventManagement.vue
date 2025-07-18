@@ -29,7 +29,7 @@
           <td>{{ event.location }}</td>
           <td>{{ event.poc ? "Current" : "Past" }}</td>
           <td>
-            <a href="#" @click.prevent="loadRegistrations(event.id, event.name)">
+            <a href="#" @click.prevent="loadRegistrations(event.id, event.name), adminViewEvent(event.slug)">
                 {{ event.registration_count }}
             </a>
             </td>
@@ -40,17 +40,6 @@
         </tr>
       </tbody>
     </table>
-    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
-        <div class="modal-box">
-            <h3>Registered Users - {{ selectedEventName }}</h3>
-            <ul>
-            <li v-for="user in selectedEventUsers" :key="user.id">
-                {{ user.name }} ({{ user.email }})
-            </li>
-            </ul>
-            <button @click="showModal = false" class="close-btn">Close</button>
-        </div>
-    </div>
     <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
         <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
         <div class="modal-box">
@@ -58,9 +47,15 @@
             <form @submit.prevent="submitNewEvent">
             <input v-model="newEvent.name" placeholder="Event Name" required />
             <input v-model="newEvent.date" type="date" required />
+            <input v-model="newEvent.time" type="time" required />
             <input v-model="newEvent.location" placeholder="Location" />
             <input v-model="newEvent.event_type" placeholder="Type (Workshop, Panel, etc.)" />
             <textarea v-model="newEvent.description" placeholder="Description"></textarea>
+            <label class="block font-semibold">Banner Image (max 1)</label>
+            <input type="file" name="bannerImage" accept="image/*" @change="handleBannerUpload" />
+
+            <label class="block mt-4 font-semibold">Guest Speaker Images (max 2)</label>
+            <input type="file" name="guestImages" accept="image/*" multiple @change="handleGuestUpload" />
 
             <button type="submit" class="submit-btn">Create</button>
             <button type="button" class="close-btn" @click="showAddModal = false">Cancel</button>
@@ -77,6 +72,7 @@
             <form @submit.prevent="submitEditEvent">
                 <input v-model="eventToEdit.name" placeholder="Event Name" required />
                 <input v-model="eventToEdit.date" type="date" required />
+                <input v-model="eventToEdit.time" type="time" required />
                 <input v-model="eventToEdit.location" placeholder="Location" />
                 <input v-model="eventToEdit.event_type" placeholder="Type" />
                 <textarea v-model="eventToEdit.description" placeholder="Description"></textarea>
@@ -86,7 +82,12 @@
                     <option :value="true">Current (PoC)</option>
                     <option :value="false">Past</option>
                 </select>
+                <label class="block mt-3">Banner Image:</label>
+                  <input type="file" accept="image/*" @change="onEditBannerChange" />
 
+                  <label class="block mt-3">Guest Speaker Images:</label>
+                  <input type="file" accept="image/*" multiple @change="onEditGuestChange" />
+                  <small class="text-gray-500">Max 2 guest images</small>
                 <button type="submit" class="submit-btn">Update</button>
                 <button type="button" class="close-btn" @click="showEditModal = false">Cancel</button>
             </form>
@@ -98,6 +99,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 const showModal = ref(false)
 const selectedEventUsers = ref([])
@@ -107,6 +110,12 @@ const showAddModal = ref(false)
 const showOnlyPOC = ref(false)
 const filterMode = ref('all')
 
+const bannerImage = ref(null);
+const guestImages = ref([]);
+
+const editBannerFile = ref(null)
+const editGuestFiles = ref([])
+
 const showEditModal = ref(false)
 const eventToEdit = ref(null)
 
@@ -115,11 +124,34 @@ const events = ref([])
 const newEvent = ref({
   name: '',
   date: '',
+  time: '',
   location: '',
   event_type: '',
-  description: ''
+  description: '',
+  images: []
 })
 
+function handleBannerUpload(e) {
+  bannerImage.value = e.target.files[0] || null;
+}
+
+function handleGuestUpload(e) {
+  const files = [...e.target.files];
+  if (files.length > 2) {
+    toast.error("You can only upload up to 2 guest images.");
+    guestImages.value = [];
+    return;
+  }
+  guestImages.value = files;
+}
+
+function onEditBannerChange(e) {
+  editBannerFile.value = e.target.files[0] || null
+}
+
+function onEditGuestChange(e) {
+  editGuestFiles.value = Array.from(e.target.files).slice(0, 2)
+}
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString()
 }
@@ -154,42 +186,95 @@ async function loadRegistrations(eventId, eventName) {
 }
 
 async function submitNewEvent() {
+  // Basic validation
+  if (!newEvent.value.name?.trim()) return toast.error("Event name is required.");
+  if (!newEvent.value.date?.trim()) return toast.error("Date is required.");
+  if (!newEvent.value.time?.trim()) return toast.error("Time is required.");
+  if (!newEvent.value.location?.trim()) return toast.error("Location is required.");
+  if (!newEvent.value.event_type?.trim()) return toast.error("Event type is required.");
+  if (!newEvent.value.description?.trim()) return toast.error("Description is required.");
+
+  const formData = new FormData();
+  formData.append('name', newEvent.value.name);
+  formData.append('date', newEvent.value.date);
+  formData.append('time', newEvent.value.time);
+  formData.append('location', newEvent.value.location);
+  formData.append('event_type', newEvent.value.event_type);
+  formData.append('description', newEvent.value.description);
+
+  if (bannerImage.value) {
+    formData.append('bannerImage', bannerImage.value);
+  }
+
+  for (const file of guestImages.value) {
+    formData.append('guestImages', file);
+  }
+
   try {
     const res = await fetch('/api/admin/create-event', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newEvent.value)
-    })
+      body: formData
+    });
 
-    if (!res.ok) throw new Error('Failed to create event')
-
-    toast.success('Event created successfully!')
-    showAddModal.value = false
-    fetchEvents()
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Unknown error');
+    toast.success('Event created!');
+    showAddModal.value = false;
+    fetchEvents();
   } catch (err) {
-    console.error(err)
-    toast.error('Error creating event')
+    console.error('Create error:', err);
+    toast.error(err.message);
   }
 }
+
+
 
 async function submitEditEvent() {
+  // Basic validation
+  if (!eventToEdit.value.name?.trim()) return toast.error("Event name is required.");
+  if (!eventToEdit.value.date?.trim()) return toast.error("Date is required.");
+  if (!eventToEdit.value.time?.trim()) return toast.error("Time is required.");
+  if (!eventToEdit.value.location?.trim()) return toast.error("Location is required.");
+  if (!eventToEdit.value.event_type?.trim()) return toast.error("Event type is required.");
+  if (!eventToEdit.value.description?.trim()) return toast.error("Description is required.");
+  if (!eventToEdit.value.poc?.trim()) return toast.error("Point of contact is required.");
+
   try {
+    const formData = new FormData();
+
+    // Append values
+    formData.append('name', eventToEdit.value.name);
+    formData.append('date', `${eventToEdit.value.date}T${eventToEdit.value.time}`);
+    formData.append('location', eventToEdit.value.location);
+    formData.append('event_type', eventToEdit.value.event_type);
+    formData.append('description', eventToEdit.value.description);
+    formData.append('poc', eventToEdit.value.poc);
+
+    // Optional new files
+    if (editBannerFile.value) {
+      formData.append("bannerImage", editBannerFile.value);
+    }
+
+    for (let i = 0; i < editGuestFiles.value.length; i++) {
+      formData.append("guestImages", editGuestFiles.value[i]);
+    }
+
     const res = await fetch(`/api/admin/edit-event/${eventToEdit.value.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(eventToEdit.value)
-    })
+      body: formData,
+    });
 
-    if (!res.ok) throw new Error('Failed to update event')
+    if (!res.ok) throw new Error('Failed to update event');
 
-    toast.success('Event updated successfully!')
-    showEditModal.value = false
-    fetchEvents()
+    toast.success('Event updated successfully!');
+    showEditModal.value = false;
+    fetchEvents();
   } catch (err) {
-    console.error(err)
-    toast.error('Error updating event')
+    console.error(err);
+    toast.error('Error updating event');
   }
 }
+
 
 
 
@@ -208,11 +293,29 @@ function cycleFilterMode() {
 }
 
 function openEditModal(event) {
-  eventToEdit.value = { ...event } // Clone to avoid direct mutation
-  showEditModal.value = true
+  const isoDate = new Date(event.date).toISOString();
+  const [datePart, timePartWithMs] = isoDate.split('T');
+  const time24h = timePartWithMs.slice(0, 5); // e.g., "14:30"
+
+  eventToEdit.value = {
+    ...event,
+    date: datePart,
+    time: time24h
+  };
+
+  showEditModal.value = true;
 }
 
 onMounted(fetchEvents)
+
+
+function adminViewEvent(slug) {
+  if (slug) {
+    router.push(`/admin/event-management/${slug}`)
+  } else {
+    console.warn("Invalid event slug:", slug)
+  }
+}
 </script>
 
 <style scoped>

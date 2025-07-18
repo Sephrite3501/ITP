@@ -2,6 +2,8 @@ import express from 'express';
 import { lockUser, unlockUser, softDeleteUser, getAllUsers, getVerificationQueue, approveSubmission, listEventsWithCounts, deleteEvent, getRegisteredUsers, createEvent, updateEvent } from '../controllers/adminController.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
+import { uploadEventAssets } from '../utils/uploadMiddleware.js';
+import { upload } from '../utils/uploadMiddleware.js'
 
 const router = express.Router()
 
@@ -17,7 +19,7 @@ router.post('/approve-user', approveSubmission)
 router.get('/with-registration-count', listEventsWithCounts);
 router.delete('/:id', deleteEvent);
 router.get('/:id/registrations', getRegisteredUsers);
-router.post('/create-event', createEvent);
-router.put('/edit-event/:id', updateEvent);
+router.post('/create-event', uploadEventAssets, createEvent);
+router.put('/edit-event/:id', uploadEventAssets, updateEvent);
 
 export default router

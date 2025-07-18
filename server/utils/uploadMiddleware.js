@@ -4,8 +4,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import sharp from 'sharp';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = new Map([
+export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+export const ALLOWED_TYPES = new Map([
   ['image/jpeg', 'jpg'],
   ['image/png', 'png'],
   ['application/pdf', 'pdf']
@@ -18,7 +18,10 @@ const PASSPORT_RATIO_TOLERANCE = 0.03; // +/-3%
 
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
-
+export const uploadEventAssets = upload.fields([
+  { name: 'bannerImage', maxCount: 1 },
+  { name: 'guestImages', maxCount: 2 }
+]);
 export async function validateAndSaveFiles(files, email) {
   if (!files || Object.keys(files).length === 0) {
     throw new Error('No files uploaded.');

@@ -1,27 +1,78 @@
 <template>
   <div class="flex items-center justify-center min-h-[80vh] bg-gray-100 px-6 py-12">
-    <div v-if="event" class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 transition hover:-translate-y-1">
-      <h2 class="text-2xl font-bold text-gray-800 border-b pb-2 mb-4">{{ event.name }}</h2>
-      <p class="text-gray-700 mb-3"><span class="font-medium">📅</span> {{ formatDate(event.date) }}</p>
-      <p class="text-gray-700 mb-3"><span class="font-medium">📍</span> Location: {{ event.location }}</p>
-      <p class="text-gray-700 mb-3"><span class="font-medium">🎯</span> Type: {{ event.event_type }}</p>
-      <p class="text-gray-700 mb-6"><span class="font-medium">📝</span> {{ event.description }}</p>
+    <div v-if="event" class="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-10 transition hover:shadow-2xl hover:-translate-y-1 duration-300">
+      <h2 class="text-3xl font-bold text-gray-900 border-b-2 border-gray-200 pb-3 mb-6">
+        {{ event.name }}
+      </h2>
+      <div v-if="event.image_paths?.banner" class="text-center mt-4">
+        <h3 class="font-semibold mb-2">Banner</h3>
+        <img :src="event.image_paths.banner" class="w-full max-w-3xl rounded shadow mx-auto" />
+      </div>
 
+      <div class="space-y-4 text-center text-gray-800 text-lg leading-relaxed">
+        <p><span class="font-semibold">📅 Date:</span> {{ formatDate(event.date) }}</p>
+        <p><span class="font-semibold">📍 Location:</span> {{ event.location }}</p>
+        <p><span class="font-semibold">🎯 Type:</span> {{ event.event_type }}</p>
+        <p><span class="font-semibold">📝 Description:</span> {{ event.description }}</p>
+      </div>
+
+      <!-- Guest Speakers (smaller images) -->
+      <div v-if="event.image_paths?.guests?.length" class="text-center mt-6">
+        <h3 class="font-semibold mb-2">Guest Speakers</h3>
+        <div class="flex flex-wrap justify-center gap-4">
+          <img
+            v-for="(img, i) in event.image_paths.guests"
+            :key="i"
+            :src="img"
+            class="w-32 h-32 object-cover rounded shadow"
+          />
+        </div>
+      </div>
       <button
-        @click="registerForEvent"
+        @click="handleRegisterClick"
         :disabled="!event.poc"
-        :class="[
-          'w-full py-3 rounded-md text-white text-base transition',
-          event.poc ? 'bg-green-600 hover:bg-green-700 cursor-pointer' : 'bg-gray-400 cursor-not-allowed'
-        ]"
+        class="mt-8 w-full py-3 rounded-md font-medium text-white text-lg transition duration-200"
+        :class="event.poc ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'"
       >
         Register
       </button>
     </div>
 
-    <div v-else class="text-lg text-gray-600 italic">
-      Event not found!.
+    <div v-else class="text-lg text-gray-600 italic text-center mt-20">
+      Event not found.
     </div>
+
+    <!-- Registration Modal -->
+    <transition name="fade">
+      <div v-if="showModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+          <h3 class="text-lg font-semibold mb-4">Event Registration</h3>
+          <form @submit.prevent="submitRegistration">
+            <label class="block mb-2">
+              Name:
+              <input v-model="form.name" type="text" class="w-full mt-1 border rounded px-3 py-2" required />
+            </label>
+            <label class="block mb-2">
+              Email:
+              <input v-model="form.email" type="email" class="w-full mt-1 border rounded px-3 py-2" required />
+            </label>
+            <label class="block mb-2">
+              Contact Number:
+              <input v-model="form.phone" type="tel" class="w-full mt-1 border rounded px-3 py-2" required />
+            </label>
+            <label class="block mb-4">
+              Number of Pax:
+              <input v-model.number="form.pax" type="number" min="1" class="w-full mt-1 border rounded px-3 py-2" required />
+            </label>
+
+            <div class="flex justify-end gap-2">
+              <button type="button" @click="showModal = false" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+              <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Submit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -29,43 +80,137 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { useAuthStore } from '@/stores/authStore' // adjust path if needed
+const auth = useAuthStore()
 
 const route = useRoute()
 const event = ref(null)
 const toast = useToast()
+const backendURL = import.meta.env.VITE_API_BASE_URL
+
 
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString()
+  const date = new Date(dateStr);
+
+  return date.toLocaleString('en-SG', {
+    dateStyle: 'medium',
+    timeStyle: 'short', // 👈 shows time like "6:00 PM"
+    hour12: true        // 👈 use 12-hour format
+  });
 }
 
 import { useRouter } from 'vue-router'
 const router = useRouter()
 
-onMounted(async () => {
-  const slug = route.params.slug
+const showModal = ref(false)
 
-  try {
-    const res = await fetch(`/api/events/${slug}`)
-    if (!res.ok) throw new Error('Event not found')
-    event.value = await res.json()
-  } catch (err) {
-    router.replace({ name: 'NotFound' })
-  }
+const form = ref({
+  name: '',
+  email: '',
+  phone: '',
+  pax: 1
 })
 
-async function registerForEvent() {
+function handleRegisterClick() {
+  if (!auth.user) {
+    toast.error('Please login before registering for an event.')
+    return
+  }
+  showModal.value = true
+}
+
+onMounted(async () => {
+  const slug = route.params.slug;
+
+  try {
+    const res = await fetch(`/api/events/${slug}`);
+    if (!res.ok) throw new Error('Event not found');
+
+    const eventData = await res.json();
+
+    // Convert each image path to a full data URL (for banner and guest images)
+    if (eventData.image_paths) {
+      const newImagePaths = {};
+
+      if (eventData.image_paths.banner) {
+        const bannerRes = await fetch(`http://localhost:3001${eventData.image_paths.banner}`);
+        const bannerBlob = await bannerRes.blob();
+        newImagePaths.banner = await blobToDataURL(bannerBlob);
+      }
+
+      if (Array.isArray(eventData.image_paths.guests)) {
+        newImagePaths.guests = await Promise.all(
+          eventData.image_paths.guests.map(async (guestPath) => {
+            const guestRes = await fetch(`http://localhost:3001${guestPath}`);
+            const guestBlob = await guestRes.blob();
+            return await blobToDataURL(guestBlob);
+          })
+        );
+      }
+
+      eventData.image_paths = newImagePaths;
+    }
+
+    event.value = eventData;
+  } catch (err) {
+    console.error('Failed to load event details:', err);
+    router.replace({ name: 'NotFound' });
+  }
+});
+
+
+// helper
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function submitRegistration() {
   const slug = route.params.slug
+
+  
+  // Basic input validation
+  const { name, email, phone, pax } = form.value
+  if (!name || !email || !phone || !pax) {
+    toast.warning('All fields are required.')
+    return
+  }
+
+  // Email format check
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    toast.warning('Please enter a valid email address.')
+    return
+  }
+
+  // Phone format check (SG +65 optional)
+  const phoneRegex = /^(?:\+65)?[689]\d{7}$/
+  if (!phoneRegex.test(phone)) {
+    toast.warning('Please enter a valid Singapore phone number.')
+    return
+  }
+
+  // Pax must be a positive integer
+  const paxNum = parseInt(pax, 10)
+  if (isNaN(paxNum) || paxNum < 1) {
+    toast.warning('Pax must be a positive number.')
+    return
+  }
+  
 
   try {
     const res = await fetch(`/api/events/${slug}/register`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        // Add Authorization: Bearer <token> if using login
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         eventId: event.value.id,
-        userId: 1 // Replace with actual user ID from auth/session
+        ...form.value
       })
     })
 
@@ -81,13 +226,24 @@ async function registerForEvent() {
       toast.success('Successfully registered for this event!')
     }
 
+    showModal.value = false
+
   } catch (err) {
-    toast.error('Please login Before registering for an event.')
+    toast.error('Please login before registering for an event.')
   }
 }
 </script>
 
 <style scoped>
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 /*
 .event-detail-container {
   padding: 3rem 2rem;

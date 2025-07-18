@@ -128,6 +128,11 @@ const routes = [
     component: () => import('@/views/admin/EventManagement.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/admin/event-management/:slug',
+    component: () => import('@/views/admin/AdminEventDetails.vue'),
+    meta: { requiresAuth: true }
+  },
 
   {
     path: '/admin/CommitteePanel',

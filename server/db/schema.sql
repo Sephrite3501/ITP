@@ -133,7 +133,8 @@ CREATE TABLE IF NOT EXISTS events (
   poc BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  slug VARCHAR(255)
+  slug VARCHAR(255),
+  image_paths JSONB,
 );
 
 CREATE TABLE IF NOT EXISTS event_registrations (
@@ -141,6 +142,7 @@ CREATE TABLE IF NOT EXISTS event_registrations (
   event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL,
   registered_at TIMESTAMP DEFAULT NOW(),
+  details TEXT,
   UNIQUE (event_id, user_id)
 );
 

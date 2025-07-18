@@ -1,5 +1,9 @@
 import db from '../db/index.js';
 import { logSecurityEvent } from '../services/logService.js';
+import { MAX_FILE_SIZE, ALLOWED_TYPES } from '../utils/uploadMiddleware.js';
+import { fileTypeFromBuffer } from 'file-type';
+import path from 'path';
+import fs from 'fs/promises';
 
 export const lockUser = async (req, res) => {
   const { userId } = req.body;
@@ -265,70 +269,213 @@ export const listEventsWithCounts = async (_req, res) => {
 };
 
 export const deleteEvent = async (req, res) => {
-  const { id } = req.params
+  const eventId = req.params.id;
+
   try {
-    await db.query('DELETE FROM events WHERE id = $1', [id])
-    res.sendStatus(204)
+    // Step 1: Fetch image_paths from DB
+    const result = await db.query(
+      'SELECT image_paths FROM events WHERE id = $1',
+      [eventId]
+    );
+
+    const imagePaths = result.rows[0]?.image_paths;
+
+    // Step 2: Delete banner and guest images
+    if (imagePaths) {
+      // Delete banner if it exists
+      if (imagePaths.banner) {
+        const bannerPath = path.resolve('uploads', path.basename(imagePaths.banner));
+        try {
+          await fs.unlink(bannerPath);
+          console.log('Deleted banner:', bannerPath);
+        } catch (err) {
+          console.warn('Banner not found or failed to delete:', bannerPath);
+        }
+      }
+
+      // Delete guest images if any
+      if (Array.isArray(imagePaths.guests)) {
+        for (const guestImg of imagePaths.guests) {
+          const guestPath = path.resolve('uploads', path.basename(guestImg));
+          try {
+            await fs.unlink(guestPath);
+            console.log('Deleted guest image:', guestPath);
+          } catch (err) {
+            console.warn('Guest image not found or failed to delete:', guestPath);
+          }
+        }
+      }
+    }
+
+    // Step 3: Delete the event from DB
+    await db.query('DELETE FROM events WHERE id = $1', [eventId]);
+
+    res.json({ message: 'Event and associated images deleted' });
   } catch (err) {
-    console.error('Failed to delete event:', err)
-    res.sendStatus(500)
+    console.error('Failed to delete event:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 export const getRegisteredUsers = async (req, res) => {
-  const { id } = req.params
+  const { id } = req.params;
 
   try {
-    const { rows } = await db.query(`
-      SELECT u.id, u.name, u.email
+    const { rows } = await db.query(
+      `
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        er.details,         
+        er.registered_at
       FROM event_registrations er
       JOIN users u ON er.user_id = u.id
       WHERE er.event_id = $1
-    `, [id])
+      ORDER BY er.registered_at DESC
+      `,
+      [id]
+    );
 
-    res.json(rows)
+    res.json(rows);
   } catch (err) {
-    console.error("Error fetching registered users:", err)
-    res.sendStatus(500)
+    console.error('Error fetching registered users:', err);
+    res.sendStatus(500);
   }
-}
+};
 
 export const createEvent = async (req, res) => {
-  const { name, date, location, description, event_type } = req.body
+  const { name, date, time, location, description, event_type } = req.body;
+  const files = req.files;
+  const imagePaths = { banner: '', guests: [] };
 
-  if (!name || !date) return res.status(400).json({ error: 'Missing required fields' })
+  if (!name || !date || !time) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
 
   const slug = name
     .toLowerCase()
     .trim()
     .replace(/\s+/g, '-')
-    .replace(/[^\w-]/g, '')
+    .replace(/[^\w-]/g, '');
+
+  const combinedDateTime = new Date(`${date}T${time}`);
+  const safeName = slug.slice(0, 30);
+
+  const saveImage = async (file, prefix) => {
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error('Image exceeds 5MB size limit');
+    }
+
+    const type = await fileTypeFromBuffer(file.buffer);
+    if (!type || !ALLOWED_TYPES.has(type.mime)) {
+      throw new Error('Image must be JPG or PNG');
+    }
+
+    const ext = ALLOWED_TYPES.get(type.mime);
+    const filename = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
+    const absPath = path.resolve('uploads', filename);
+    await fs.writeFile(absPath, file.buffer);
+    return `/uploads/${filename}`;
+  };
 
   try {
+    if (files?.bannerImage?.[0]) {
+      imagePaths.banner = await saveImage(files.bannerImage[0], safeName);
+    }
+
+    if (files?.guestImages?.length) {
+      for (const file of files.guestImages.slice(0, 2)) {
+        const imgPath = await saveImage(file, safeName);
+        imagePaths.guests.push(imgPath);
+      }
+    }
+
+    console.log('Final imagePaths JSON:', imagePaths);
+
     await db.query(
-      `INSERT INTO events (name, slug, date, location, description, event_type, poc)
-       VALUES ($1, $2, $3, $4, $5, $6, true)`,
-      [name, slug, date, location, description, event_type]
-    )
-    res.status(201).json({ message: 'Event created', slug })
+      `INSERT INTO events (name, slug, date, location, description, event_type, poc, image_paths)
+       VALUES ($1, $2, $3, $4, $5, $6, true, $7)`,
+      [name, slug, combinedDateTime, location, description, event_type, JSON.stringify(imagePaths)]
+    );
+
+    res.status(201).json({ message: 'Event created', slug });
   } catch (err) {
-    console.error('Failed to create event:', err)
-    res.sendStatus(500)
+    console.error('Failed to create event:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
 
 
 export const updateEvent = async (req, res) => {
-  const { id } = req.params
-  const { name, date, location, event_type, description, poc } = req.body
+  const { id } = req.params;
+  const { name, date, location, event_type, description, poc } = req.body;
+  const files = req.files;
 
   const slug = name
-  .toLowerCase()
-  .trim()
-  .replace(/\s+/g, '-')
-  .replace(/[^\w-]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '');
+
+  const safeName = slug.slice(0, 30);
+  const combinedDateTime = new Date(date);
+  const imagePaths = { banner: '', guests: [] };
+
+  const saveImage = async (file, prefix) => {
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error('Image exceeds 5MB size limit');
+    }
+
+    const type = await fileTypeFromBuffer(file.buffer);
+    if (!type || !ALLOWED_TYPES.has(type.mime)) {
+      throw new Error('Image must be JPG or PNG');
+    }
+
+    const ext = ALLOWED_TYPES.get(type.mime);
+    const filename = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
+    const absPath = path.resolve('uploads', filename);
+    await fs.writeFile(absPath, file.buffer);
+    return `/uploads/${filename}`;
+  };
 
   try {
+    // Step 1: Get existing image_paths
+    const existing = await db.query('SELECT image_paths FROM events WHERE id = $1', [id]);
+    if (!existing.rows.length) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const oldImagePaths = existing.rows[0].image_paths || { banner: '', guests: [] };
+
+    // Step 2: Replace banner image if provided
+    if (files?.bannerImage?.[0]) {
+      const newBanner = await saveImage(files.bannerImage[0], safeName);
+      const oldBannerPath = path.resolve('uploads', path.basename(oldImagePaths.banner));
+      if (oldImagePaths.banner) {
+        try { await fs.unlink(oldBannerPath); } catch {}
+      }
+      imagePaths.banner = newBanner;
+    } else {
+      imagePaths.banner = oldImagePaths.banner;
+    }
+
+    // Step 3: Replace guest images if provided
+    if (files?.guestImages?.length) {
+      // Delete old guest images
+      for (const oldGuest of oldImagePaths.guests || []) {
+        try { await fs.unlink(path.resolve('uploads', path.basename(oldGuest))); } catch {}
+      }
+
+      for (const file of files.guestImages.slice(0, 2)) {
+        const imgPath = await saveImage(file, safeName);
+        imagePaths.guests.push(imgPath);
+      }
+    } else {
+      imagePaths.guests = oldImagePaths.guests;
+    }
+
+    // Step 4: Update DB
     const result = await db.query(
       `UPDATE events
        SET name = $1,
@@ -338,22 +485,20 @@ export const updateEvent = async (req, res) => {
            description = $5,
            poc = $6,
            slug = $7,
+           image_paths = $8,
            updated_at = NOW()
-       WHERE id = $8
+       WHERE id = $9
        RETURNING *`,
-      [name, date, location, event_type, description, poc, slug, id]
-    )
+      [name, combinedDateTime, location, event_type, description, poc, slug, JSON.stringify(imagePaths), id]
+    );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Event not found" })
-    }
-
-    res.json({ message: "Event updated", event: result.rows[0] })
+    res.json({ message: "Event updated", event: result.rows[0] });
   } catch (err) {
-    console.error("Failed to update event:", err)
-    res.status(500).json({ message: "Internal server error" })
+    console.error("Failed to update event:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
-}
+};
+
 
 
 

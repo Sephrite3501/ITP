@@ -81,3 +81,28 @@ export const sendResetPasswordEmail = async (to, token, name = '') => {
     throw new Error('Failed to send reset password email');
   }
 };
+
+
+export const sendEventRegistrationEmail = async (to, name, eventInfo = {}) => {
+  const traceId = `EMAIL-REG-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+  try {
+    const subject = `Registration Confirmed: ${eventInfo.name}`;
+    const html = loadTemplate('event-registration.html')
+      .replace('{{name}}', name || 'User')
+      .replace('{{eventName}}', eventInfo.name || 'Unnamed Event')
+      .replace('{{eventDate}}', eventInfo.date || 'N/A')
+      .replace('{{eventLocation}}', eventInfo.location || 'N/A')
+      .replace('{{eventType}}', eventInfo.type || 'N/A')
+      .replace('{{pax}}', eventInfo.pax || '1');
+
+    await transporter.sendMail({
+      from: `"IRC Admin" <${process.env.MAIL_USER}>`,
+      to,
+      subject,
+      html
+    });
+  } catch (err) {
+    console.error(`[${traceId}] Failed to send event registration email:`, err);
+    throw new Error('Failed to send event registration email');
+  }
+};

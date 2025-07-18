@@ -37,7 +37,8 @@ app.use(cookieParser());
 
 // Static files
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+//app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.resolve('uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -65,10 +66,6 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('[SERVER ERROR]', err.stack);
   res.status(500).json({ error: 'Unexpected server error' });
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 IRC backend running on port ${PORT}`);
 });
 
 scheduleNextSnapshot().catch(console.error)
