@@ -212,7 +212,7 @@ function onSearch(role) {
 // 6) Assign a user to a role
 async function addMember(role, userId) {
   try {
-    await axios.post('/api/committees/leadership', { role, memberId: userId })
+    await axios.post('/api/admin/committees/leadership', { role, memberId: userId })
     await fetchAssignments()
     showAdd[role] = false
   } catch (err) {
@@ -223,7 +223,7 @@ async function addMember(role, userId) {
 // 7) Remove a user from its role
 async function removeMember(userId) {
   try {
-    await axios.delete('/api/committees/leadership', { data: { memberId: userId } })
+    await axios.delete('/api/admin/committees/leadership', { data: { memberId: userId } })
     await fetchAssignments()
   } catch (err) {
     console.error('Failed to remove member', err)

@@ -5,12 +5,7 @@ import {
   getCommittees,
   listSnapshots,
   getSnapshotById,
-  createSnapshot,
-  snapshotLimiter,
-  searchMembers,
-  updateLeadership,
-  deleteLeadership,
-  ALLOWED_ROLES
+  snapshotLimiter
 } from '../controllers/committeeController.js'
 
 const router = express.Router()
@@ -28,35 +23,6 @@ router.get(
   getSnapshotById
 )
 
-// Manual snapshot trigger
-router.post('/snapshots', createSnapshot)
 
-// Member search (for your “Add to role” UI)
-router.get(
-  '/members',
-  query('search')
-    .isString().withMessage('search must be text')
-    .trim().escape(),
-  searchMembers
-)
-
-// Assign a role
-router.post(
-  '/leadership',
-  body('role')
-    .isString().withMessage('role must be text')
-    .isIn(ALLOWED_ROLES).withMessage('invalid role'),
-  body('memberId')
-    .isInt({ min:1 }).withMessage('memberId must be positive integer'),
-  updateLeadership
-)
-
-// Remove a role
-router.delete(
-  '/leadership',
-  body('memberId')
-    .isInt({ min:1 }).withMessage('memberId must be positive integer'),
-  deleteLeadership
-)
 
 export default router

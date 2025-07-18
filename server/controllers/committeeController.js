@@ -24,25 +24,7 @@ export const ALLOWED_ROLES = [
   'Committee Member'
 ]
 
-function cleanImagePath(rawPath) {
-  if (!rawPath) return null
 
-  // Strip any HTML / tags
-  const stripped = sanitizeHtml(rawPath, {
-    allowedTags: [],
-    allowedAttributes: {}
-  })
-
-  
-  try {
-    new URL(stripped, 'http://example.com')
-
-    return stripped
-  } catch {
- 
-    return null
-  }
-}
 
 function sanitizeMember(member = {}) {
   return {
@@ -51,7 +33,6 @@ function sanitizeMember(member = {}) {
     role: sanitizeHtml(member.role  || '', { allowedTags: [], allowedAttributes: {} }),
     email: sanitizeHtml(member.email || '', { allowedTags: [], allowedAttributes: {} }),
     organization: sanitizeHtml(member.organization || '', { allowedTags: [], allowedAttributes: {} }),
-    imagePath: cleanImagePath(member.profile_image_path)
   }
 }
 
@@ -63,7 +44,7 @@ export const getCommittees = async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, role, organization, profile_image_path FROM users WHERE role IS NOT NULL`
+      `SELECT id, name, role, organization FROM users WHERE role IS NOT NULL`
     )
 
     const all = rows.map(u => ({
@@ -71,7 +52,6 @@ export const getCommittees = async (req, res) => {
       name: sanitizeHtml(u.name, { allowedTags: [], allowedAttributes: {} }),
       role: sanitizeHtml(u.role, { allowedTags: [], allowedAttributes: {} }),
       organization: sanitizeHtml(u.organization, { allowedTags: [], allowedAttributes: {} }),
-      profile_image_path: cleanImagePath(u.profile_image_path)
     }))
 
     const leadershipOrder = ['President',
@@ -84,11 +64,11 @@ export const getCommittees = async (req, res) => {
   ]
     const leadership = all
       .filter(u => leadershipOrder.includes(u.role))
-      .map(u => ({ role: u.role, member: { id: u.id, name: u.name, organization: u.organization, profile_image_path: u.profile_image_path } }))
+      .map(u => ({ role: u.role, member: { id: u.id, name: u.name, organization: u.organization } }))
 
     const member = all
       .filter(u => u.role === 'Committee Member')
-      .map(u => ({ id: u.id, name: u.name, organization: u.organization, profile_image_path: u.profile_image_path }))
+      .map(u => ({ id: u.id, name: u.name, organization: u.organization }))
 
     res.json({ leadership, member })
     logSecurityEvent({ traceId, action:'get_committees', status:'success', ip, userAgent:ua, message:'Listed committees' })
@@ -211,8 +191,6 @@ export const getSnapshotById = async (req, res) => {
           name: slot.member.name,
           role: slot.member.role,
           organization: slot.member.organization,
-          email: slot.member.email,
-          profile_image_path: cleanImagePath(slot.member.profile_image_path)
         })
       })),
       member: member.map(m =>
@@ -220,9 +198,7 @@ export const getSnapshotById = async (req, res) => {
           id: m.id,
           name: m.name,
           role: m.role,
-          email: m.email,
           organization: m.organization,
-          profile_image_path: cleanImagePath(m.profile_image_path)
         })
       )
     })
@@ -235,16 +211,6 @@ export const getSnapshotById = async (req, res) => {
   }
 }
 
-// POST /api/committees/snapshots (manual trigger)
-export const createSnapshot = async (req, res) => {
-  try {
-    await snapshotCommittees()
-    res.sendStatus(204)
-  } catch (err) {
-    console.error('manual snapshot error:', err)
-    res.sendStatus(500)
-  }
-}
 
 export async function snapshotCommittees() {
   const { rows: cfg } = await pool.query(
@@ -263,7 +229,7 @@ export async function snapshotCommittees() {
 
 
   const { rows } = await pool.query(`
-    SELECT id, name, role, email, organization, profile_image_path
+    SELECT id, name, role, email, organization
       FROM users
      WHERE role IS NOT NULL
   `);
@@ -273,7 +239,6 @@ export async function snapshotCommittees() {
     role:         sanitizeHtml(u.role || '', { allowedTags:[], allowedAttributes:{} }),
     email:        sanitizeHtml(u.email || '', { allowedTags:[], allowedAttributes:{} }),
     organization: sanitizeHtml(u.organization||'', { allowedTags:[], allowedAttributes:{} }),
-    profile_image_path: cleanImagePath(u.profile_image_path)
   }));
 
 
@@ -291,7 +256,6 @@ export async function snapshotCommittees() {
         name:         u.name,
         email:        u.email,
         organization: u.organization,
-        profile_image_path: u.profile_image_path
       }
     }));
 
@@ -302,7 +266,6 @@ export async function snapshotCommittees() {
       name:         u.name,
       email:        u.email,
       organization: u.organization,
-      profile_image_path: u.profile_image_path
     }));
 
 
@@ -387,6 +350,11 @@ export const updateLeadership = async (req, res) => {
   }
 
   const { role, memberId } = req.body
+
+  if (!ALLOWED_ROLES.includes(role)) {
+  return res.status(400).json({ error: `Invalid role: ${role}` })
+  }
+  
   try {
     await pool.query(
       'UPDATE users SET role=$1 WHERE id=$2',
