@@ -1,6 +1,6 @@
 <template>
   <section class="p-6 max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6 text-center">Committee History</h1>
+    <h1 class="text-3xl font-bold mb-6 text-center">Prior Committees</h1>
     <span class="block w-48 h-1 bg-yellow-400 rounded mb-8 mx-auto"></span>
 
     <!-- Snapshot selector -->

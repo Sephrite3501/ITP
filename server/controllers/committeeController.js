@@ -213,6 +213,18 @@ export const getSnapshotById = async (req, res) => {
 
 
 export async function snapshotCommittees() {
+  const traceId = `SNAPSHOT-${Math.random().toString(36).slice(2,7).toUpperCase()}`
+  const ip      = 'system'
+  const ua      = 'scheduler'
+    try {
+    logSecurityEvent({
+      traceId,
+      action: 'snapshot_start',
+      status: 'started',
+      ip,
+      userAgent: ua,
+      message: 'Beginning committee snapshot'
+    })
   const { rows: cfg } = await pool.query(
     'SELECT term_years FROM committee_settings LIMIT 1'
   );
@@ -272,19 +284,34 @@ export async function snapshotCommittees() {
   const periodEnd = new Date(periodStart);
   periodEnd.setFullYear(periodEnd.getFullYear() + term);
 
- 
-  await pool.query(
+  const result = await pool.query(
     `INSERT INTO committee_snapshots
        (data, taken_at, period_start, period_end)
-     VALUES($1, NOW(), $2, $3)`,
+     VALUES($1, NOW(), $2, $3) RETURNING id`,
     [ { leadership, member }, periodStart, periodEnd ]
   );
 
-  console.log(
-    `Snapshot taken at ${new Date().toISOString()} `+
-    `(covers ${periodStart.toISOString()} → ${periodEnd.toISOString()})`
-  );
+  const newId = result.rows[0].id
 
+  logSecurityEvent({
+      traceId,
+      action: 'snapshot_create',
+      status: 'success',
+      ip,
+      userAgent: ua,
+      message: `Inserted snapshot ${newId}`
+    })
+  } catch (err) {
+    logSecurityEvent({
+      traceId,
+      action: 'snapshot_create',
+      status: 'error',
+      ip,
+      userAgent: ua,
+      message: err.message
+    })
+    console.error(`${traceId} snapshot error:`, err)
+  }
 }
 
 

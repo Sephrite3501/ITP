@@ -2,6 +2,7 @@
 import schedule from 'node-schedule'
 import pool from '../db/index.js'
 import { snapshotCommittees } from '../controllers/committeeController.js'
+import { logSecurityEvent } from '../services/logService.js'
 
 let nextSnapshotJob = null
 
@@ -26,19 +27,53 @@ export async function scheduleNextSnapshot() {
   nextRun.setFullYear(nextRun.getFullYear() + term)
   const now = new Date()
 
+  const traceId = `SNAPSHOT-${Math.random().toString(36).slice(2,7).toUpperCase()}`
+  const ip      = 'system'
+  const ua      = 'scheduler'
+
+  await logSecurityEvent({
+    traceId,
+    action: 'schedule_next_snapshot',
+    status: nextRun <= now ? 'overdue' : 'scheduled',
+    ip,
+    userAgent: ua,
+    message: nextRun <= now
+      ? `Overdue: lastEnd=${lastEnd.toISOString()}, firing immediately`
+      : `Next snapshot at ${nextRun.toISOString()} (term=${term}y)`
+  })
+
   if (nextRun <= now) {
-    console.log(
-      `→ overdue! period_end was ${lastEnd.toISOString()}, ` +
-      `term=${term}s → firing snapshot immediately.`
-    )
     try {
       await snapshotCommittees()
-      console.log('✔ snapshot taken at', new Date().toISOString())
+      await logSecurityEvent({
+        traceId,
+        action: 'snapshot_fire',
+        status: 'success',
+        ip,
+        userAgent: ua,
+        message: 'Overdue snapshot taken immediately'
+      })
     } catch (err) {
-      console.error('Error in overdue snapshot:', err)
+      await logSecurityEvent({
+        traceId,
+        action: 'snapshot_fire',
+        status: 'error',
+        ip,
+        userAgent: ua,
+        message: err.message
+      })
     }
-
-    return scheduleNextSnapshot().catch(console.error)
+    
+    return scheduleNextSnapshot().catch(async err => {
+      console.error(`${traceId} recursive schedule error:`, err)
+      await logSecurityEvent({
+        traceId,
+        action: 'schedule_recursive_error',
+        status: 'error',
+        ip, userAgent: ua,
+        message: err.message
+      })
+    })
   }
 
   console.log(`→ scheduling next snapshot on ${nextRun.toISOString()} (term=${term}y)`)
@@ -50,11 +85,35 @@ export async function scheduleNextSnapshot() {
   nextSnapshotJob = schedule.scheduleJob(nextRun, async () => {
     try {
       await snapshotCommittees()
-      console.log('✔ snapshot taken at', new Date().toISOString())
+      await logSecurityEvent({
+        traceId,
+        action: 'snapshot_fire',
+        status: 'success',
+        ip,
+        userAgent: ua,
+        message: 'Scheduled snapshot taken'
+      })
     } catch (err) {
-      console.error('Error in scheduled snapshot:', err)
+      console.error(`${traceId} scheduled snapshot error:`, err)
+      await logSecurityEvent({
+        traceId,
+        action: 'snapshot_fire',
+        status: 'error',
+        ip,
+        userAgent: ua,
+        message: err.message
+      })
     }
 
-    scheduleNextSnapshot().catch(console.error)
+    scheduleNextSnapshot().catch(async err => {
+      console.error(`${traceId} post-fire schedule error:`, err)
+      await logSecurityEvent({
+        traceId,
+        action: 'schedule_postfire_error',
+        status: 'error',
+        ip, userAgent: ua,
+        message: err.message
+      })
+    })
   })
 }

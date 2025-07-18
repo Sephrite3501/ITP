@@ -37,7 +37,7 @@
               <ul v-if="dropdownStates.committees"
                   class="absolute left-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow z-50 divide-y transition-all">
                 <li><router-link to="/committees" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees')">Current Committees</router-link></li>
-                <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Committees History</router-link></li>
+                <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Prior Committees</router-link></li>
               </ul>
             </transition>
           </li>
@@ -95,7 +95,7 @@
               <ul v-if="dropdownStates.committees"
                   class="absolute left-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow z-50 divide-y transition-all">
                 <li><router-link to="/committees" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees')">Current Committees</router-link></li>
-                <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Committees History</router-link></li>
+                <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Prior Committees</router-link></li>
               </ul>
             </transition>
           </li>
@@ -129,7 +129,7 @@
               <ul v-if="dropdownStates.committees"
                 class="absolute left-0 top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow z-50 divide-y transition-all">
               <li><router-link to="/committees" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees')">Current Committees</router-link></li>
-              <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Committees History</router-link></li>
+              <li><router-link to="/committees/snapshots" class="block px-4 py-2 hover:bg-gray-100" :class="isActive('/committees/snapshots')">Prior Committees</router-link></li>
               </ul>
             </transition>
             </li>
