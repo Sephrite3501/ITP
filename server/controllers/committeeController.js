@@ -13,6 +13,13 @@ export const snapshotLimiter = rateLimit({
   legacyHeaders: false
 })
 
+export const committeesLimiter = rateLimit({
+  windowMs: 60 * 1000,   // 1 minute
+  max:      100,        
+  standardHeaders: true,
+  legacyHeaders: false
+})
+
 export const ALLOWED_ROLES = [
   'President',
   'Vice President',

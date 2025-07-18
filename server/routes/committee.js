@@ -5,13 +5,14 @@ import {
   getCommittees,
   listSnapshots,
   getSnapshotById,
-  snapshotLimiter
+  snapshotLimiter,
+  committeesLimiter,
 } from '../controllers/committeeController.js'
 
 const router = express.Router()
 
 // Public read-only
-router.get('/', getCommittees)
+router.get('/', committeesLimiter, getCommittees)
 
 // Snapshot history
 router.get('/snapshots', snapshotLimiter, listSnapshots)

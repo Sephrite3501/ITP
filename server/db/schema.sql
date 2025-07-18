@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   slug VARCHAR(255),
-  image_paths JSONB,
+  image_paths JSONB
 );
 
 CREATE TABLE IF NOT EXISTS event_registrations (
