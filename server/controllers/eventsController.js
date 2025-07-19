@@ -16,7 +16,7 @@ export const listEvents = async (_req, res) => {
     const safe = rows.map(r => ({
       id: r.id,
       name: r.name,
-      slug: r.slug,  // ✅ Make sure this is included
+      slug: r.slug, 
       date: new Date(r.date).toISOString(),
       location: r.location,
       description: r.description,
@@ -33,7 +33,6 @@ export const listEvents = async (_req, res) => {
 
 export const getEventBySlug = async (req, res) => {
   const slug = req.params.slug
-  console.log("Backend received slug:", slug) // <== add this for debug
 
   try {
     const { rows } = await pool.query(

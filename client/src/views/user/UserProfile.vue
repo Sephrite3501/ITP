@@ -96,7 +96,7 @@
               <h3 class="text-lg font-bold text-gray-700">{{ event.title }}</h3>
               <button class="ml-2 text-red-600 hover:text-red-800 font-bold text-lg" @click="unregisterFromEvent(event.id)" title="Unregister">✕</button>
             </div>
-            <p class="text-sm text-gray-600 mb-0.5">{{ event.date }}</p>
+            <p class="text-sm text-gray-600 mb-0.5">{{ formatDate(event.date) }}</p>
             <p class="text-sm text-gray-600">{{ event.location }}</p>
           </li>
         </ul>
@@ -164,6 +164,15 @@ function blobToDataURL(blob) {
     reader.onloadend = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
+  });
+}
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleString('en-SG', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    hour12: true
   });
 }
 

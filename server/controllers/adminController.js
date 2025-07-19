@@ -270,39 +270,42 @@ export const listEventsWithCounts = async (_req, res) => {
 
 export const deleteEvent = async (req, res) => {
   const eventId = req.params.id;
+  const adminId = req.user?.id; // Ensure this is available from your auth middleware
+  const reqRef = req;
+  const refId = `DELETE-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
   try {
-    // Step 1: Fetch image_paths from DB
+    // Step 1: Fetch image_paths
     const result = await db.query(
-      'SELECT image_paths FROM events WHERE id = $1',
+      'SELECT name, image_paths FROM events WHERE id = $1',
       [eventId]
     );
 
-    const imagePaths = result.rows[0]?.image_paths;
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
 
-    // Step 2: Delete banner and guest images
-    if (imagePaths) {
-      // Delete banner if it exists
-      if (imagePaths.banner) {
-        const bannerPath = path.resolve('uploads', path.basename(imagePaths.banner));
-        try {
-          await fs.unlink(bannerPath);
-          console.log('Deleted banner:', bannerPath);
-        } catch (err) {
-          console.warn('Banner not found or failed to delete:', bannerPath);
-        }
+    const { name, image_paths: imagePaths } = result.rows[0];
+
+    // Step 2: Delete images
+    if (imagePaths?.banner) {
+      const bannerPath = path.resolve('uploads', path.basename(imagePaths.banner));
+      try {
+        await fs.unlink(bannerPath);
+        console.log('Deleted banner:', bannerPath);
+      } catch {
+        console.warn('Banner not found or failed to delete:', bannerPath);
       }
+    }
 
-      // Delete guest images if any
-      if (Array.isArray(imagePaths.guests)) {
-        for (const guestImg of imagePaths.guests) {
-          const guestPath = path.resolve('uploads', path.basename(guestImg));
-          try {
-            await fs.unlink(guestPath);
-            console.log('Deleted guest image:', guestPath);
-          } catch (err) {
-            console.warn('Guest image not found or failed to delete:', guestPath);
-          }
+    if (Array.isArray(imagePaths?.guests)) {
+      for (const guestImg of imagePaths.guests) {
+        const guestPath = path.resolve('uploads', path.basename(guestImg));
+        try {
+          await fs.unlink(guestPath);
+          console.log('Deleted guest image:', guestPath);
+        } catch {
+          console.warn('Guest image not found or failed to delete:', guestPath);
         }
       }
     }
@@ -310,12 +313,37 @@ export const deleteEvent = async (req, res) => {
     // Step 3: Delete the event from DB
     await db.query('DELETE FROM events WHERE id = $1', [eventId]);
 
+    await logSecurityEvent({
+      category: 'admin',
+      userId: adminId,
+      action: 'delete_event',
+      refId: refId,
+      details: `Deleted event '${name}' (ID: ${eventId})`,
+      severity: 'high',
+      req: reqRef
+    });
+
     res.json({ message: 'Event and associated images deleted' });
+
   } catch (err) {
     console.error('Failed to delete event:', err);
+
+    await logSecurityEvent({
+      category: 'error',
+      userId: adminId,
+      action: 'delete_event',
+      errorType: 'EventDeleteError',
+      message: `Failed to delete event ID: ${eventId}`,
+      stack: err.stack,
+      severity: 'critical',
+      refId: refId,
+      req: reqRef
+    });
+
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 export const getRegisteredUsers = async (req, res) => {
   const { id } = req.params;
@@ -348,6 +376,9 @@ export const createEvent = async (req, res) => {
   const { name, date, time, location, description, event_type } = req.body;
   const files = req.files;
   const imagePaths = { banner: '', guests: [] };
+  const adminId = req.user?.id;
+  const reqRef = req;
+  const refId = `CREATE-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
   if (!name || !date || !time) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -380,10 +411,12 @@ export const createEvent = async (req, res) => {
   };
 
   try {
+    // Save banner image
     if (files?.bannerImage?.[0]) {
       imagePaths.banner = await saveImage(files.bannerImage[0], safeName);
     }
 
+    // Save guest images
     if (files?.guestImages?.length) {
       for (const file of files.guestImages.slice(0, 2)) {
         const imgPath = await saveImage(file, safeName);
@@ -391,17 +424,39 @@ export const createEvent = async (req, res) => {
       }
     }
 
-    console.log('Final imagePaths JSON:', imagePaths);
-
+    // Insert event into DB
     await db.query(
       `INSERT INTO events (name, slug, date, location, description, event_type, poc, image_paths)
        VALUES ($1, $2, $3, $4, $5, $6, true, $7)`,
       [name, slug, combinedDateTime, location, description, event_type, JSON.stringify(imagePaths)]
     );
 
+    await logSecurityEvent({
+      category: 'admin',
+      userId: adminId,
+      action: 'create_event',
+      details: `Admin (${adminId}) created event '${name}'`,
+      refId: refId,
+      severity: 'medium',
+      req: reqRef
+    });
+
     res.status(201).json({ message: 'Event created', slug });
+
   } catch (err) {
     console.error('Failed to create event:', err);
+
+    await logSecurityEvent({
+      category: 'error',
+      userId: adminId,
+      action: 'create_event',
+      errorType: 'EventCreationError',
+      message: `Failed to create event '${name}'`,
+      stack: err.stack,
+      severity: 'high',
+      req: reqRef
+    });
+
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -411,6 +466,9 @@ export const updateEvent = async (req, res) => {
   const { id } = req.params;
   const { name, date, location, event_type, description, poc } = req.body;
   const files = req.files;
+  const adminId = req.user?.id; // assuming you have auth middleware
+  const reqRef = req;
+  const refId = `UPDATE-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
   const slug = name
     .toLowerCase()
@@ -440,7 +498,6 @@ export const updateEvent = async (req, res) => {
   };
 
   try {
-    // Step 1: Get existing image_paths
     const existing = await db.query('SELECT image_paths FROM events WHERE id = $1', [id]);
     if (!existing.rows.length) {
       return res.status(404).json({ message: 'Event not found' });
@@ -448,7 +505,6 @@ export const updateEvent = async (req, res) => {
 
     const oldImagePaths = existing.rows[0].image_paths || { banner: '', guests: [] };
 
-    // Step 2: Replace banner image if provided
     if (files?.bannerImage?.[0]) {
       const newBanner = await saveImage(files.bannerImage[0], safeName);
       const oldBannerPath = path.resolve('uploads', path.basename(oldImagePaths.banner));
@@ -460,9 +516,7 @@ export const updateEvent = async (req, res) => {
       imagePaths.banner = oldImagePaths.banner;
     }
 
-    // Step 3: Replace guest images if provided
     if (files?.guestImages?.length) {
-      // Delete old guest images
       for (const oldGuest of oldImagePaths.guests || []) {
         try { await fs.unlink(path.resolve('uploads', path.basename(oldGuest))); } catch {}
       }
@@ -475,7 +529,6 @@ export const updateEvent = async (req, res) => {
       imagePaths.guests = oldImagePaths.guests;
     }
 
-    // Step 4: Update DB
     const result = await db.query(
       `UPDATE events
        SET name = $1,
@@ -492,12 +545,37 @@ export const updateEvent = async (req, res) => {
       [name, combinedDateTime, location, event_type, description, poc, slug, JSON.stringify(imagePaths), id]
     );
 
+    await logSecurityEvent({
+      category: 'admin',
+      userId: adminId,
+      action: 'update_event',
+      refId: refId,
+      details: `Admin (${adminId}) updated event '${name}' (ID: ${id})`,
+      severity: 'medium',
+      req: reqRef
+    });
+
     res.json({ message: "Event updated", event: result.rows[0] });
+
   } catch (err) {
     console.error("Failed to update event:", err);
+
+    await logSecurityEvent({
+      category: 'error',
+      userId: adminId,
+      action: 'update_event',
+      errorType: 'EventUpdateError',
+      message: `Failed to update event ID: ${id}`,
+      stack: err.stack,
+      refId: refId,
+      severity: 'high',
+      req: reqRef
+    });
+
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 

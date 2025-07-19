@@ -192,7 +192,6 @@ async function submitNewEvent() {
   if (!newEvent.value.time?.trim()) return toast.error("Time is required.");
   if (!newEvent.value.location?.trim()) return toast.error("Location is required.");
   if (!newEvent.value.event_type?.trim()) return toast.error("Event type is required.");
-  if (!newEvent.value.description?.trim()) return toast.error("Description is required.");
 
   const formData = new FormData();
   formData.append('name', newEvent.value.name);
@@ -237,7 +236,6 @@ async function submitEditEvent() {
   if (!eventToEdit.value.location?.trim()) return toast.error("Location is required.");
   if (!eventToEdit.value.event_type?.trim()) return toast.error("Event type is required.");
   if (!eventToEdit.value.description?.trim()) return toast.error("Description is required.");
-  if (!eventToEdit.value.poc?.trim()) return toast.error("Point of contact is required.");
 
   try {
     const formData = new FormData();
