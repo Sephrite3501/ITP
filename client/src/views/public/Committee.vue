@@ -46,7 +46,6 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
 axios.defaults.withCredentials = true
 
 const raw       = ref({ leadership: [], member: [] })
