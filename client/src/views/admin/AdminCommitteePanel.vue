@@ -87,22 +87,7 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import axios from 'axios'
-
-
-// ————— axios global hardening —————
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
-axios.defaults.withCredentials = true
-axios.interceptors.request.use(cfg => {
-  const token = getCsrfToken()
-  if (token) cfg.headers['X-CSRF-Token'] = token
-  return cfg
-})
-
-// helper to read CSRF token from a secure, httpOnly cookie set by the server
-function getCsrfToken() {
-  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : null
-}
+import api from '../../utils/axiosInstance'
 
 const termYears = ref(2)
 const termError = ref(null)
@@ -119,7 +104,7 @@ async function fetchTerm() {
 async function saveTerm() {
   termError.value = null
   try {
-    await axios.post('/api/admin/committees/settings', { termYears: termYears.value })
+    await api.post('/api/admin/committees/settings', { termYears: termYears.value })
   } catch (err) {
     termError.value = err.response?.data?.errors?.[0]?.msg || 'Failed to save term length'
   }
@@ -212,7 +197,7 @@ function onSearch(role) {
 // 6) Assign a user to a role
 async function addMember(role, userId) {
   try {
-    await axios.post('/api/admin/committees/leadership', { role, memberId: userId })
+    await api.post('/api/admin/committees/leadership', { role, memberId: userId })
     await fetchAssignments()
     showAdd[role] = false
   } catch (err) {
@@ -223,7 +208,7 @@ async function addMember(role, userId) {
 // 7) Remove a user from its role
 async function removeMember(userId) {
   try {
-    await axios.delete('/api/admin/committees/leadership', { data: { memberId: userId } })
+    await api.delete('/api/admin/committees/leadership', { data: { memberId: userId } })
     await fetchAssignments()
   } catch (err) {
     console.error('Failed to remove member', err)

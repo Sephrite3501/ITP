@@ -114,25 +114,25 @@ const tableRows = computed(() => {
     flex-wrap: wrap;
   }
   .leadership-cols > * {
-    flex: 1 1 calc(50% - 0.75rem); /* 2 items per row on sm+ */
+    flex: 1 1 calc(50% - 0.75rem);
   }
   .chair-cols > * {
-    flex: 1 1 calc(33.333% - 0.75rem); /* 3 items per row on sm+ */
+    flex: 1 1 calc(33.333% - 0.75rem); 
   }
 }
 
 @media (min-width: 768px) {
   .leadership-cols > * {
-    flex: 1 1 calc(33.333% - 0.75rem); /* 3 items per row on md+ */
+    flex: 1 1 calc(33.333% - 0.75rem); 
   }
   .chair-cols > * {
-    flex: 1 1 calc(25% - 0.75rem); /* 4 items per row on md+ */
+    flex: 1 1 calc(25% - 0.75rem); 
   }
 }
 
 @media (min-width: 1024px) {
   .chair-cols > * {
-    flex: 1 1 calc(16.666% - 0.75rem); /* 6 items per row on lg+ */
+    flex: 1 1 calc(16.666% - 0.75rem);
   }
 }
 

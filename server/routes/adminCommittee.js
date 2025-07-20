@@ -1,6 +1,7 @@
 // server/routes/adminCommittee.js
 import express from 'express'
 import { query, body } from 'express-validator'
+import { doubleCsrfProtection } from '../middleware/csrfMiddleware.js';
 
 import {
   getSettings,
@@ -30,7 +31,7 @@ router.get(
 
 // Assign a role
 router.post(
-  '/leadership',
+  '/leadership', doubleCsrfProtection,
   body('role')
     .isString().withMessage('role must be text')
     .isIn(ALLOWED_ROLES).withMessage('invalid role'),
@@ -41,7 +42,7 @@ router.post(
 
 // Remove a role
 router.delete(
-  '/leadership',
+  '/leadership', doubleCsrfProtection,
   body('memberId')
     .isInt({ min:1 }).withMessage('memberId must be positive integer'),
   deleteLeadership
@@ -52,7 +53,7 @@ router.get(
   getSettings
 )
 router.post(
-  '/settings',
+  '/settings', doubleCsrfProtection,
   body('termYears')
     .toInt()                                        // ← coerce into an integer
     .isInt({ min: 1, max: 10 })
