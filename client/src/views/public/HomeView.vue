@@ -1,13 +1,13 @@
 <template>
   <div>
     <!-- Carousel -->
-    <Carousel :images="content.carousel" />
+    <Carousel :images="sanitizedContent.carousel" />
 
     <!-- Intro Section -->
     <section class="intro">
-      <h1 class="intro-title">{{ content.intro.title }}</h1>
+      <h1 class="intro-title">{{ sanitizedContent.intro.title }}</h1>
       <div class="intro-body">
-        <p class="intro-text" v-html="content.intro.body"></p>
+        <p class="intro-text" v-html="sanitizedContent.intro.body"></p>
       </div>
     </section>
 
@@ -20,14 +20,14 @@
             <img :src="visionIcon" alt="Vision Icon" />
           </div>
           <h3>IRC Vision</h3>
-          <p>{{ content.vision }}</p>
+          <p>{{ sanitizedContent.vision }}</p>
         </div>
         <div class="vm-card mission">
           <div class="icon-wrapper">
             <img :src="missionIcon" alt="Mission Icon" />
           </div>
           <h3>IRC Mission</h3>
-          <p>{{ content.mission }}</p>
+          <p>{{ sanitizedContent.mission }}</p>
         </div>
       </div>
     </section>
@@ -40,7 +40,7 @@
       </p>
       <div class="community-cards">
         <div
-          v-for="(card, idx) in content.community"
+          v-for="(card, idx) in sanitizedContent.community"
           :key="idx"
           class="card"
         >
@@ -53,7 +53,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import DOMPurify from 'dompurify'
 import Carousel from '@/components/Carousel.vue'
 
 // Default static slides
@@ -63,48 +64,18 @@ import slide3 from '@/assets/SIT3.jpg'
 import slide4 from '@/assets/SIT4.jpeg'
 
 // Icons
-import visionIcon  from '@/assets/eye.svg'
+import visionIcon from '@/assets/eye.svg'
 import missionIcon from '@/assets/rocket.svg'
 
 const content = ref({
-  // start with your SIT images
   carousel: [slide1, slide2, slide3, slide4],
-
-  // static intro
   intro: {
-    title: 'Welcome! 欢迎!',
-    body: `
-      International Researchers Club (IRC) was established in 2001 with the vision to create
-      a vibrant and innovative research community for Singapore. IRC also organizes the
-      IRC Conference on Science, Engineering and Technology (IRC-SET), an annual event which
-      provides a platform for young and talented researchers to share fresh results, obtain
-      comments, and exchange innovative ideas in multi-disciplinary areas. For more details,
-      please refer to our
-      <a href="https://your-conference-site.example.com" target="_blank" rel="noopener">
-        IRC conference website
-      </a>. Thank you!
-    `
+    title: '',
+    body: ''
   },
-
-  // static vision & mission
-  vision:  'To create a vibrant and innovative researcher community for Singapore',
-  mission: 'To organize events and provide a platform for young researchers to share, learn, and collaborate across disciplines',
-
-  // static community cards
-  community: [
-    {
-      title: 'NETWORKING',
-      body:  'Build network with young and senior researchers in various research areas.'
-    },
-    {
-      title: 'INTEREST SHARING',
-      body:  'Share your interest in research with a community who knows how to appreciate.'
-    },
-    {
-      title: 'IDEAS EXCHANGING',
-      body:  'Expose and learn latest and new research studies, innovations at our research conference.'
-    }
-  ]
+  vision: '',
+  mission: '',
+  community: []
 })
 
 async function loadContent() {
@@ -118,6 +89,25 @@ async function loadContent() {
 }
 
 onMounted(loadContent)
+
+// Build a fully sanitized mirror of content
+const sanitizedContent = computed(() => ({
+  // sanitize each image URL (strip any scripts)
+  carousel: content.value.carousel.map(url => DOMPurify.sanitize(url)),
+
+  intro: {
+    title:  DOMPurify.sanitize(content.value.intro.title),
+    body:   DOMPurify.sanitize(content.value.intro.body)
+  },
+
+  vision:  DOMPurify.sanitize(content.value.vision),
+  mission: DOMPurify.sanitize(content.value.mission),
+
+  community: (content.value.community || []).map(card => ({
+    title: DOMPurify.sanitize(card.title),
+    body:  DOMPurify.sanitize(card.body)
+  }))
+}))
 </script>
 
 <style scoped>
@@ -278,4 +268,3 @@ div {
   color: #555;
 }
 </style>
-

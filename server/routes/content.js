@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getContent, updateContent } from '../controllers/contentController.js'
+import { getContent, updateContent, validateAndSanitizeContent } from '../controllers/contentController.js'
 
 const router = Router()
 
@@ -7,6 +7,6 @@ const router = Router()
 router.get('/', getContent)
 
 // PUT  /api/content
-router.put('/', updateContent)
+router.put('/', validateAndSanitizeContent, updateContent)
 
 export default router
