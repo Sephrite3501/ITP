@@ -116,9 +116,18 @@ export const registerForEventBySlug = async (req, res) => {
     }
 
     // Send confirmation email
+    const eventDate = new Date(event.date);
+
     await sendEventRegistrationEmail(user.email, name, {
       name: event.name,
-      date: new Date(event.date).toLocaleDateString(),
+      date: eventDate.toLocaleDateString('en-SG', {
+        dateStyle: 'medium'
+      }),
+      time: eventDate.toLocaleTimeString('en-SG', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }),
       location: event.location,
       type: event.event_type,
       pax: paxInt

@@ -102,6 +102,7 @@ import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import api from '../../utils/axiosInstance'
+import DOMPurify from 'dompurify';
 const router = useRouter()
 
 const showModal = ref(false)
@@ -147,8 +148,9 @@ function getCsrfToken() {
   const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
   return match ? decodeURIComponent(match[1]) : null
 }
-
-
+function sanitizeInput(value) {
+  return DOMPurify.sanitize(String(value || '').trim());
+}
 function handleBannerUpload(e) {
   bannerImage.value = e.target.files[0] || null;
 }
@@ -217,13 +219,14 @@ async function submitNewEvent() {
   if (!newEvent.value.location?.trim()) return toast.error("Location is required.");
   if (!newEvent.value.event_type?.trim()) return toast.error("Event type is required.");
 
+  // 🧼 Sanitize inputs using your function
   const formData = new FormData();
-  formData.append('name', newEvent.value.name);
-  formData.append('date', newEvent.value.date);
-  formData.append('time', newEvent.value.time);
-  formData.append('location', newEvent.value.location);
-  formData.append('event_type', newEvent.value.event_type);
-  formData.append('description', newEvent.value.description);
+  formData.append('name', sanitizeInput(newEvent.value.name));
+  formData.append('date', sanitizeInput(newEvent.value.date));
+  formData.append('time', sanitizeInput(newEvent.value.time));
+  formData.append('location', sanitizeInput(newEvent.value.location));
+  formData.append('event_type', sanitizeInput(newEvent.value.event_type));
+  formData.append('description', sanitizeInput(newEvent.value.description || ''));
 
   if (bannerImage.value) {
     formData.append('bannerImage', bannerImage.value);
@@ -265,23 +268,30 @@ async function submitNewEvent() {
 
 
 async function submitEditEvent() {
-  // Basic validation
-  if (!eventToEdit.value.name?.trim()) return toast.error("Event name is required.");
-  if (!eventToEdit.value.date?.trim()) return toast.error("Date is required.");
-  if (!eventToEdit.value.time?.trim()) return toast.error("Time is required.");
-  if (!eventToEdit.value.location?.trim()) return toast.error("Location is required.");
-  if (!eventToEdit.value.event_type?.trim()) return toast.error("Event type is required.");
-  if (!eventToEdit.value.description?.trim()) return toast.error("Description is required.");
+  // Sanitize inputs
+  const sanitizedName = sanitizeInput(eventToEdit.value.name);
+  const sanitizedDate = sanitizeInput(eventToEdit.value.date);
+  const sanitizedTime = sanitizeInput(eventToEdit.value.time);
+  const sanitizedLocation = sanitizeInput(eventToEdit.value.location);
+  const sanitizedType = sanitizeInput(eventToEdit.value.event_type);
+  const sanitizedDesc = sanitizeInput(eventToEdit.value.description);
+  const sanitizedPoc = sanitizeInput(eventToEdit.value.poc);
+
+  if (!sanitizedName) return toast.error("Event name is required.");
+  if (!sanitizedDate) return toast.error("Date is required.");
+  if (!sanitizedTime) return toast.error("Time is required.");
+  if (!sanitizedLocation) return toast.error("Location is required.");
+  if (!sanitizedType) return toast.error("Event type is required.");
+  if (!sanitizedDesc) return toast.error("Description is required.");
 
   try {
     const formData = new FormData();
-
-    formData.append('name', eventToEdit.value.name);
-    formData.append('date', `${eventToEdit.value.date}T${eventToEdit.value.time}`);
-    formData.append('location', eventToEdit.value.location);
-    formData.append('event_type', eventToEdit.value.event_type);
-    formData.append('description', eventToEdit.value.description);
-    formData.append('poc', eventToEdit.value.poc);
+    formData.append('name', sanitizedName);
+    formData.append('date', `${sanitizedDate}T${sanitizedTime}`);
+    formData.append('location', sanitizedLocation);
+    formData.append('event_type', sanitizedType);
+    formData.append('description', sanitizedDesc);
+    formData.append('poc', sanitizedPoc);
 
     if (editBannerFile.value) {
       formData.append("bannerImage", editBannerFile.value);
@@ -290,8 +300,10 @@ async function submitEditEvent() {
     for (let i = 0; i < editGuestFiles.value.length; i++) {
       formData.append("guestImages", editGuestFiles.value[i]);
     }
+
     const { data } = await api.get('/api/auth/csrf-token');
     const csrfToken = data.csrfToken;
+
     await api.put(`/api/admin/edit-event/${eventToEdit.value.id}`, formData, {
       headers: {
         'X-CSRF-Token': csrfToken,
@@ -314,7 +326,6 @@ async function submitEditEvent() {
     toast.error(message);
   }
 }
-
 
 
 

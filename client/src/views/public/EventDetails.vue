@@ -90,13 +90,28 @@ const backendURL = import.meta.env.VITE_API_BASE_URL
 
 
 function formatDate(dateStr) {
-  const date = new Date(dateStr);
+  console.log('Raw date input:', dateStr);
 
-  return date.toLocaleString('en-SG', {
-    dateStyle: 'medium',
-    timeStyle: 'short', // 👈 shows time like "6:00 PM"
-    hour12: true        // 👈 use 12-hour format
+  if (!dateStr || !dateStr.includes('T')) return 'Invalid Date';
+
+  const [datePart, timePart] = dateStr.split('T');
+  const [hour, minute] = timePart.split(':');
+
+  const displayDate = new Date(`${datePart}T00:00:00`); // Use only the date part for display
+  const displayTime = new Date();
+  displayTime.setHours(Number(hour), Number(minute), 0);
+
+  const formattedDate = displayDate.toLocaleDateString('en-SG', {
+    dateStyle: 'medium'
   });
+
+  const formattedTime = displayTime.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  return `${formattedDate}, ${formattedTime}`;
 }
 
 import { useRouter } from 'vue-router'

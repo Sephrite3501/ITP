@@ -184,12 +184,28 @@ function blobToDataURL(blob) {
 }
 
 function formatDate(dateStr) {
-  const date = new Date(dateStr);
-  return date.toLocaleString('en-SG', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  console.log('Raw date input:', dateStr);
+
+  if (!dateStr || !dateStr.includes('T')) return 'Invalid Date';
+
+  const [datePart, timePart] = dateStr.split('T');
+  const [hour, minute] = timePart.split(':');
+
+  const displayDate = new Date(`${datePart}T00:00:00`); // Use only the date part for display
+  const displayTime = new Date();
+  displayTime.setHours(Number(hour), Number(minute), 0);
+
+  const formattedDate = displayDate.toLocaleDateString('en-SG', {
+    dateStyle: 'medium'
+  });
+
+  const formattedTime = displayTime.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
     hour12: true
   });
+
+  return `${formattedDate}, ${formattedTime}`;
 }
 
 const fetchProfile = async () => {
