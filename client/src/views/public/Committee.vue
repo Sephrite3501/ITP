@@ -48,12 +48,6 @@ import axios from 'axios'
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
 axios.defaults.withCredentials = true
-axios.defaults.headers.common['Cache-Control'] = 'no-store'
-axios.interceptors.request.use(cfg => {
-  const m = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-  if (m) cfg.headers['X-CSRF-Token'] = decodeURIComponent(m[1])
-  return cfg
-})
 
 const raw       = ref({ leadership: [], member: [] })
 const isLoading = ref(true)

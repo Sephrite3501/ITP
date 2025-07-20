@@ -85,6 +85,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
+axios.defaults.withCredentials = true
 
 const snapshots = ref([])           // { id, period_start, period_end }[]
 const selectedId = ref(null)

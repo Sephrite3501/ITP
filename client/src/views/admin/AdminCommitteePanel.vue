@@ -89,6 +89,8 @@ import { reactive, ref, onMounted } from 'vue'
 import axios from 'axios'
 import api from '../../utils/axiosInstance'
 
+axios.defaults.withCredentials = true
+
 const termYears = ref(2)
 const termError = ref(null)
 
