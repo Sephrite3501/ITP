@@ -113,6 +113,7 @@ import axios from 'axios'
 import { useAuthStore } from '../../stores/authStore'
 import { useToast } from 'vue-toastification'
 import { logSecurityClient } from '@/utils/logUtils'
+import api from '../../utils/axiosInstance'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -145,6 +146,21 @@ const form = reactive({
 })
 
 const registeredEvents = ref([])
+
+// ————— axios global hardening —————
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
+axios.defaults.withCredentials = true
+axios.interceptors.request.use(cfg => {
+  const token = getCsrfToken()
+  if (token) cfg.headers['X-CSRF-Token'] = token
+  return cfg
+})
+
+// helper to read CSRF token from a secure, httpOnly cookie set by the server
+function getCsrfToken() {
+  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
 
 async function fetchProfilePhoto() {
   try {
@@ -217,7 +233,7 @@ const fetchRegisteredEvents = async () => {
 
 const unregisterFromEvent = async (eventId) => {
   try {
-    await axios.delete(`http://localhost:3001/api/user/unregister/${eventId}`, {
+    await api.delete(`http://localhost:3001/api/user/unregister/${eventId}`, {
       withCredentials: true
     })
     registeredEvents.value = registeredEvents.value.filter(e => e.id !== eventId)
@@ -271,6 +287,9 @@ const saveChanges = async () => {
   }
 
   try {
+    const { data } = await api.get('/api/auth/csrf-token');
+    const csrfToken = data.csrfToken;
+
     await axios.post(
       'http://localhost:3001/api/user/update-profile',
       {
@@ -281,40 +300,47 @@ const saveChanges = async () => {
         currentPassword: form.currentPassword,
         newPassword: form.newPassword || undefined
       },
-      { withCredentials: true }
-    )
+      {
+        withCredentials: true,
+        headers: {
+          'X-CSRF-Token': csrfToken
+        }
+      }
+    );
 
-    user.contact = form.contact
-    user.address = form.address
-    user.organization = form.organization
-    editing.value = false
-    form.currentPassword = ''
-    form.newPassword = ''
-    success.value = 'Profile updated successfully.'
+    user.contact = form.contact;
+    user.address = form.address;
+    user.organization = form.organization;
+    editing.value = false;
+    form.currentPassword = '';
+    form.newPassword = '';
+    success.value = 'Profile updated successfully.';
+    toast.success('Profile updated successfully.');
 
     await logSecurityClient({
       category: 'user',
       action: 'profile_updated',
       details: `Profile updated for ${user.email} (refId: ${refId})`,
       severity: 'low'
-    })
+    });
   } catch (err) {
-    error.value = err.response?.data?.error || `Update failed. (Ref: ${refId})`
+    error.value = err.response?.data?.error || `Update failed. (Ref: ${refId})`;
     await logSecurityClient({
       category: 'error',
       action: 'profile_update_failed',
       details: `Update failed for ${user.email} (refId: ${refId})`,
       severity: 'medium'
-    })
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
+
 
 const deleteAccount = async () => {
   try {
     const { email } = auth.user
-    const res = await axios.post('http://localhost:3001/api/user/delete-account', {
+    const res = await api.post('http://localhost:3001/api/user/delete-account', {
       email,
       currentPassword: confirmPassword.value
     }, { withCredentials: true })

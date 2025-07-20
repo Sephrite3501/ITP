@@ -38,6 +38,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { logSecurityClient } from '@/utils/logUtils'
 import { useToast } from 'vue-toastification'
+import api from '../../utils/axiosInstance'
 
 const toast = useToast()
 const queue = ref([])
@@ -52,7 +53,7 @@ const approveUser = async (submissionId, userId, userName) => {
   const refId = `VERIFY-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
   try {
-    await axios.post('http://localhost:3001/api/admin/approve-user', {
+    await api.post('http://localhost:3001/api/admin/approve-user', {
       submissionId,
       userId
     }, { withCredentials: true })

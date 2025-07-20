@@ -100,6 +100,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+import api from '../../utils/axiosInstance'
 const router = useRouter()
 
 const showModal = ref(false)
@@ -131,6 +133,22 @@ const newEvent = ref({
   images: []
 })
 
+// ————— axios global hardening —————
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
+axios.defaults.withCredentials = true
+axios.interceptors.request.use(cfg => {
+  const token = getCsrfToken()
+  if (token) cfg.headers['X-CSRF-Token'] = token
+  return cfg
+})
+
+// helper to read CSRF token from a secure, httpOnly cookie set by the server
+function getCsrfToken() {
+  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+
 function handleBannerUpload(e) {
   bannerImage.value = e.target.files[0] || null;
 }
@@ -157,27 +175,34 @@ function formatDate(dateStr) {
 }
 
 async function fetchEvents() {
-  const res = await fetch('/api/admin/with-registration-count')
-  events.value = await res.json()
+  const res = await axios.get('/api/admin/with-registration-count')
+  events.value = res.data
 }
 
 async function deleteEvent(id) {
-  if (!confirm("Are you sure you want to delete this event?")) return
+  if (!confirm("Are you sure you want to delete this event?")) return;
+
   try {
-    const res = await fetch(`/api/admin/${id}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error('Failed to delete')
-    toast.success('Event deleted')
-    fetchEvents()
+    await api.delete(`/api/admin/${id}`);
+    toast.success('Event deleted');
+    fetchEvents();
   } catch (err) {
-    console.error(err)
-    toast.error('Error deleting event')
+    console.error('Delete error:', err);
+
+    const message =
+      err.response?.data?.error ||
+      err.response?.statusText ||
+      err.message ||
+      "Failed to delete event";
+
+    toast.error(message);
   }
 }
 
 async function loadRegistrations(eventId, eventName) {
   try {
-    const res = await fetch(`/api/admin/${eventId}/registrations`)
-    selectedEventUsers.value = await res.json()
+    const res = await axios.get(`/api/admin/${eventId}/registrations`)
+    selectedEventUsers.value = res.data
     selectedEventName.value = eventName
     showModal.value = true
   } catch (err) {
@@ -186,7 +211,6 @@ async function loadRegistrations(eventId, eventName) {
 }
 
 async function submitNewEvent() {
-  // Basic validation
   if (!newEvent.value.name?.trim()) return toast.error("Event name is required.");
   if (!newEvent.value.date?.trim()) return toast.error("Date is required.");
   if (!newEvent.value.time?.trim()) return toast.error("Time is required.");
@@ -210,21 +234,33 @@ async function submitNewEvent() {
   }
 
   try {
-    const res = await fetch('/api/admin/create-event', {
-      method: 'POST',
-      body: formData
+    const { data } = await api.get('/api/auth/csrf-token');
+    const csrfToken = data.csrfToken;
+
+    const res = await api.post('/api/admin/create-event', formData, {
+      headers: {
+        'X-CSRF-Token': csrfToken,
+      },
+      withCredentials: true,
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || 'Unknown error');
     toast.success('Event created!');
     showAddModal.value = false;
     fetchEvents();
   } catch (err) {
-    console.error('Create error:', err);
-    toast.error(err.message);
+    console.error("Full error object:", err);
+
+    const message =
+      err.response?.data?.error ||
+      err.response?.statusText ||
+      err.message ||
+      "Unknown error";
+
+    toast.error(message);
   }
 }
+
+
 
 
 
@@ -240,7 +276,6 @@ async function submitEditEvent() {
   try {
     const formData = new FormData();
 
-    // Append values
     formData.append('name', eventToEdit.value.name);
     formData.append('date', `${eventToEdit.value.date}T${eventToEdit.value.time}`);
     formData.append('location', eventToEdit.value.location);
@@ -248,7 +283,6 @@ async function submitEditEvent() {
     formData.append('description', eventToEdit.value.description);
     formData.append('poc', eventToEdit.value.poc);
 
-    // Optional new files
     if (editBannerFile.value) {
       formData.append("bannerImage", editBannerFile.value);
     }
@@ -256,22 +290,31 @@ async function submitEditEvent() {
     for (let i = 0; i < editGuestFiles.value.length; i++) {
       formData.append("guestImages", editGuestFiles.value[i]);
     }
-
-    const res = await fetch(`/api/admin/edit-event/${eventToEdit.value.id}`, {
-      method: 'PUT',
-      body: formData,
+    const { data } = await api.get('/api/auth/csrf-token');
+    const csrfToken = data.csrfToken;
+    await api.put(`/api/admin/edit-event/${eventToEdit.value.id}`, formData, {
+      headers: {
+        'X-CSRF-Token': csrfToken,
+      },
+      withCredentials: true,
     });
-
-    if (!res.ok) throw new Error('Failed to update event');
 
     toast.success('Event updated successfully!');
     showEditModal.value = false;
     fetchEvents();
   } catch (err) {
-    console.error(err);
-    toast.error('Error updating event');
+    console.error('Edit error:', err);
+
+    const message =
+      err.response?.data?.error || 
+      err.response?.statusText || 
+      err.message || 
+      "Unknown error";
+
+    toast.error(message);
   }
 }
+
 
 
 

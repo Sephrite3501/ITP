@@ -4,11 +4,15 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import { uploadEventAssets } from '../utils/uploadMiddleware.js';
 import { upload } from '../utils/uploadMiddleware.js'
+import { doubleCsrfProtection } from '../middleware/csrfMiddleware.js';
 
 const router = express.Router()
 
 // 🔐 All admin routes require authenticated admin
 router.use(requireAuth, requireAdmin)
+
+// CSRF protection for all admin routes
+router.use(doubleCsrfProtection);
 
 router.post('/lock-user', lockUser)
 router.post('/unlock-user', unlockUser)

@@ -23,6 +23,7 @@ import { verifyCaptcha } from '../middleware/verifyCaptcha.js'
 import { authLimiter, loginLimiter } from '../middleware/rateLimiter.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { revokeToken } from '../utils/tokenUtils.js'
+import { generateCsrfToken } from '../middleware/csrfMiddleware.js';
 
 const router = express.Router()
 
@@ -44,6 +45,11 @@ router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.user })
 })
 router.post('/refresh', requireAuth, refreshToken)
+
+router.get('/csrf-token', requireAuth, (req, res) => {
+  const csrfToken = generateCsrfToken(req, res);
+  res.json({ csrfToken });
+});
 
 // 🔐 LOGOUT
 router.post('/logout', async (req, res) => {

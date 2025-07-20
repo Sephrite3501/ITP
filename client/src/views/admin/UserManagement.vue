@@ -98,6 +98,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { logSecurityClient } from '@/utils/logUtils'
+import api from '../../utils/axiosInstance'
 
 const toast = useToast()
 const users = ref([])
@@ -152,36 +153,43 @@ const updateStatus = async (userId, action) => {
   }
 
   try {
+    const { data } = await api.get('/api/auth/csrf-token');
+    const csrfToken = data.csrfToken;
+
     const res = await fetch(`http://localhost:3001/api/admin/${endpoints[action]}`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
       body: JSON.stringify({ userId })
-    })
+    });
 
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Request failed')
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || 'Request failed');
 
-    toast.success(data.message || `${action} successful`)
+    toast.success(result.message || `${action} successful`);
     await logSecurityClient({
       category: 'admin',
       action: `admin_${action}_user`,
       refId,
       details: `User ${userId} ${action}ed by admin (refId: ${refId})`,
       severity: 'high'
-    })
+    });
 
-    await fetchUsers()
+    await fetchUsers();
   } catch (err) {
-    toast.error(`Failed to ${action} user. (Ref: ${refId})`)
+    toast.error(`Failed to ${action} user. (Ref: ${refId})`);
     await logSecurityClient({
       category: 'error',
       action: `admin_${action}_failed`,
       refId,
       details: `Failed to ${action} user ${userId} (refId: ${refId})`,
       severity: 'critical'
-    })
+    });
   }
 }
+
 </script>
 

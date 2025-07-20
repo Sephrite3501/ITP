@@ -68,6 +68,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { logSecurityClient } from '@/utils/logUtils'
+import api from '../../utils/axiosInstance'
 
 const idFile = ref(null)
 const paymentFile = ref(null)
@@ -102,48 +103,72 @@ function handleFileChange(event, type) {
 }
 
 async function uploadDocuments() {
-  uploadStatus.value = ''
-  uploading.value = true
+  uploadStatus.value = '';
+  uploading.value = true;
 
-  const formData = new FormData()
-  formData.append('identityProof', idFile.value)
-  formData.append('paymentProof', paymentFile.value)
-  formData.append('profilePicture', profileFile.value)
+  const formData = new FormData();
+  formData.append('identityProof', idFile.value);
+  formData.append('paymentProof', paymentFile.value);
+  formData.append('profilePicture', profileFile.value);
+
+  console.log('[DEBUG] Selected Files:', {
+    idFile: idFile.value,
+    paymentFile: paymentFile.value,
+    profileFile: profileFile.value
+  });
 
   try {
+    const { data } = await api.get('/api/auth/csrf-token');
+    const csrfToken = data.csrfToken;
+    console.log('[DEBUG] CSRF Token:', csrfToken);
+
     const res = await fetch('http://localhost:3001/api/user/upload-documents', {
       method: 'POST',
       body: formData,
-      credentials: 'include'
-    })
-    const result = await res.json()
+      credentials: 'include',
+      headers: {
+        'X-CSRF-Token': csrfToken
+      }
+    });
 
-    if (!res.ok) throw new Error(result.error || 'Upload failed')
+    console.log('[DEBUG] Raw Response:', res);
 
-    uploadStatus.value = result.message || 'Documents uploaded!'
-    toast.success(uploadStatus.value || 'Documents uploaded successfully!')
+    const result = await res.json();
+    console.log('[DEBUG] Response JSON:', result);
+
+    if (!res.ok) {
+      console.error('[DEBUG] Upload failed. Status:', res.status, result);
+      throw new Error(result.error || 'Upload failed');
+    }
+
+    uploadStatus.value = result.message || 'Documents uploaded!';
+    toast.success(uploadStatus.value);
+
     await logSecurityClient({
       category: 'user',
       action: 'documents_uploaded',
       details: `Verification documents uploaded (refId: ${refId})`,
       severity: 'medium'
-    })
+    });
 
-    // Optionally redirect after showing toast (you may want a delay here!)
     setTimeout(() => {
-      router.push('/userprofile')
-    }, 1200)
+      router.push('/userprofile');
+    }, 1200);
   } catch (err) {
-    uploadStatus.value = `Failed to upload. Please try again. (Ref: ${refId})`
-    toast.error(uploadStatus.value)
+    console.error('[DEBUG] Upload error:', err);
+    uploadStatus.value = `Failed to upload. Please try again. (Ref: ${refId})`;
+    toast.error(uploadStatus.value);
+
     await logSecurityClient({
       category: 'error',
       action: 'upload_documents_failed',
       details: `Document upload failed (refId: ${refId})`,
       severity: 'high'
-    })
+    });
   } finally {
-    uploading.value = false
+    uploading.value = false;
   }
 }
+
+
 </script>

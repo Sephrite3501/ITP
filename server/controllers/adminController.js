@@ -380,8 +380,17 @@ export const createEvent = async (req, res) => {
   const reqRef = req;
   const refId = `CREATE-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
-  if (!name || !date || !time) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // 🛡️ Input validation
+  if (!name?.trim() || !date?.trim() || !time?.trim() || !location?.trim() || !event_type?.trim() || !description?.trim()) {
+    return res.status(400).json({ error: 'All fields (name, date, time, location, event_type, description) are required.' });
+  }
+
+  if (typeof name !== 'string' || name.length > 100) {
+    return res.status(400).json({ error: 'Event name must be a string with max 100 characters.' });
+  }
+
+  if (isNaN(Date.parse(`${date}T${time}`))) {
+    return res.status(400).json({ error: 'Invalid date or time format.' });
   }
 
   const slug = name
@@ -416,7 +425,7 @@ export const createEvent = async (req, res) => {
       imagePaths.banner = await saveImage(files.bannerImage[0], safeName);
     }
 
-    // Save guest images
+    // Save guest images (up to 2 max)
     if (files?.guestImages?.length) {
       for (const file of files.guestImages.slice(0, 2)) {
         const imgPath = await saveImage(file, safeName);
@@ -424,7 +433,6 @@ export const createEvent = async (req, res) => {
       }
     }
 
-    // Insert event into DB
     await db.query(
       `INSERT INTO events (name, slug, date, location, description, event_type, poc, image_paths)
        VALUES ($1, $2, $3, $4, $5, $6, true, $7)`,
@@ -470,6 +478,19 @@ export const updateEvent = async (req, res) => {
   const reqRef = req;
   const refId = `UPDATE-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
+  // 🛡️ Input validation
+  if (!name?.trim() || !date?.trim() || !location?.trim() || !event_type?.trim() || !description?.trim()) {
+    return res.status(400).json({ error: 'All required fields (name, date, location, event_type, description) must be provided.' });
+  }
+
+  if (typeof name !== 'string' || name.length > 100) {
+    return res.status(400).json({ error: 'Event name must be a string and less than 100 characters.' });
+  }
+
+  if (isNaN(Date.parse(date))) {
+    return res.status(400).json({ error: 'Invalid date format.' });
+  }
+
   const slug = name
     .toLowerCase()
     .trim()
@@ -505,6 +526,7 @@ export const updateEvent = async (req, res) => {
 
     const oldImagePaths = existing.rows[0].image_paths || { banner: '', guests: [] };
 
+    // Handle new banner upload
     if (files?.bannerImage?.[0]) {
       const newBanner = await saveImage(files.bannerImage[0], safeName);
       const oldBannerPath = path.resolve('uploads', path.basename(oldImagePaths.banner));
@@ -516,6 +538,7 @@ export const updateEvent = async (req, res) => {
       imagePaths.banner = oldImagePaths.banner;
     }
 
+    // Handle guest image uploads
     if (files?.guestImages?.length) {
       for (const oldGuest of oldImagePaths.guests || []) {
         try { await fs.unlink(path.resolve('uploads', path.basename(oldGuest))); } catch {}
@@ -575,6 +598,7 @@ export const updateEvent = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 

@@ -14,6 +14,7 @@ import { upload } from '../utils/uploadMiddleware.js'
 import { requireAuth } from '../middleware/requireAuth.js'
 import { get } from 'http'
 import { validateUpdateProfile } from '../validators/authValidator.js';
+import { doubleCsrfProtection } from '../middleware/csrfMiddleware.js';
 
 
 
@@ -25,10 +26,10 @@ router.use(requireAuth)
 // 🧑 User endpoints
 router.get('/user-profile', getUserProfile)
 router.get('/profile-photo', getProfilePicture)
-router.post('/update-profile', validateUpdateProfile, updateProfile)
-router.post('/delete-account', deleteAccount)
+router.post('/update-profile', validateUpdateProfile, doubleCsrfProtection, updateProfile)
+router.post('/delete-account', doubleCsrfProtection, deleteAccount)
 router.get('/registered-events', getUserRegisteredEvents)
-router.delete('/unregister/:eventId', unregisterUserFromEvent)
+router.delete('/unregister/:eventId', doubleCsrfProtection, unregisterUserFromEvent)
 
 // 🧾 Document submission (uploads)
 router.post(
@@ -38,6 +39,7 @@ router.post(
     { name: 'identityProof', maxCount: 1 },
     { name: 'profilePicture', maxCount: 1 }
   ]),
+  doubleCsrfProtection,
   submitVerificationDocs
 )
 
