@@ -6,8 +6,8 @@ import sanitizeHtml from 'sanitize-html';
 export const validateAndSanitizeContent = [
   // carousel: array of 1–10 valid URL strings
   body('carousel')
-    .isArray({ min: 1, max: 10 })
-    .withMessage('Carousel must be an array of 1–10 items.'),
+    .isArray({ min: 1, max: 4 })
+    .withMessage('Carousel must be an array of 1–4 items.'),
   body('carousel.*')
     .isString()
     .matches(/^\/assets\/[A-Za-z0-9_\-/.]+\.(jpg|jpeg|png|gif)$/)
