@@ -1,6 +1,6 @@
 import { Router } from 'express'
-import { getLogs } from '../controllers/logsController.js'
+import { validateLogs, getLogs } from '../controllers/logsController.js'
 
 const router = Router()
-router.get('/:type', getLogs)
+router.get('/:type', validateLogs, getLogs)
 export default router

@@ -16,6 +16,11 @@
         </select>
       </label>
 
+      <!-- Suggestion Text -->
+      <div class="suggestion-text">
+        Suggested Searches : User, Session, Login
+      </div>
+
       <label>
         Search:
         <input
@@ -132,6 +137,8 @@ export default {
   margin-bottom: 1rem;
   color: black;
 }
+
+/* filters */
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -159,6 +166,16 @@ export default {
 .filters button:hover {
   background: #f0f0f0;
 }
+
+/* suggestion text */
+.suggestion-text {
+  font-size: 0.9rem;
+  color: #333;
+  margin-right: 1rem;
+  font-style: italic;
+}
+
+/* logs table */
 .logs-table {
   width: 100%;
   border-collapse: collapse;
