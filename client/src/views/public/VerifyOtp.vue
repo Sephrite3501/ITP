@@ -140,8 +140,14 @@ const onSubmit = async () => {
         severity: 'low'
       })
 
-      await router.replace({ path: '/userprofile' })
-      await router.go()
+      const role = sessionData.user.user_role;
+        if (role === 'admin') {
+          await router.replace({ path: '/admin/users' });
+        } else {
+          await router.replace({ path: '/userprofile' });
+        }
+
+        await router.go();
     }
   } catch (err) {
     errorMessage.value = getFriendlyError(err, 'OTP verification failed.', refId)

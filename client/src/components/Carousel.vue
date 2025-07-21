@@ -31,10 +31,10 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 
 // static default slides in the order you want
-import slide1 from '@/assets/SIT1.jpg'
-import slide2 from '@/assets/SIT2.jpg'
-import slide3 from '@/assets/SIT3.jpg'
-import slide4 from '@/assets/SIT4.jpeg'
+import slide1 from '@/assets/IRC1.jpg'
+import slide2 from '@/assets/IRC2.jpg'
+import slide3 from '@/assets/IRC3.jpg'
+import slide4 from '@/assets/IRC4.jpg'
 
 const defaultImages = [slide1, slide2, slide3, slide4]
 
